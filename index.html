@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Goug - دستیار هوش مصنوعی</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- API Key Modal -->
+    <div id="api-key-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h2 class="modal-title">ورود کلید API</h2>
+        <p class="modal-description">
+          برای استفاده از Goug، لطفاً کلید Gemini API خود را وارد کنید. کلید شما فقط در مرورگر شما ذخیره می‌شود.
+        </p>
+        <form id="api-key-form">
+          <input 
+            type="password" 
+            id="api-key-input" 
+            placeholder="کلید API خود را اینجا وارد کنید" 
+            class="modal-input"
+          />
+          <button 
+            type="submit" 
+            class="modal-button">
+            ذخیره و شروع گفتگو
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Main Chat Application -->
+    <div id="app-container" class="hidden">
+      <header id="app-header">
+        <h1>Goug AI Chat (گوگ)</h1>
+        <button id="edit-api-key-button">ویرایش کلید API</button>
+      </header>
+
+      <main id="chat-container">
+        <div id="message-list">
+          <!-- Chat messages will be dynamically inserted here -->
+        </div>
+      </main>
+
+      <footer id="app-footer">
+        <form id="chat-form">
+          <textarea
+            id="message-input"
+            placeholder="پیام خود را اینجا بنویسید..."
+            rows="1"
+          ></textarea>
+          <button type="submit" id="send-button">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+          </button>
+        </form>
+      </footer>
+    </div>
+    
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
