@@ -11,25 +11,70 @@
 </head>
 <body>
 
-    <!-- API Key Modal -->
-    <div id="api-key-modal" class="modal-overlay hidden">
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay hidden">
       <div class="modal-content">
-        <h2 class="modal-title">ورود کلید API</h2>
+        <h2 class="modal-title">تنظیمات مدل</h2>
         <p class="modal-description">
-          برای استفاده از Goug، لطفاً کلید Gemini API خود را وارد کنید. کلید شما فقط در مرورگر شما ذخیره می‌شود.
+          ارائه‌دهنده و کلید API خود را برای شروع گفتگو انتخاب کنید.
         </p>
-        <form id="api-key-form">
-          <input 
-            type="password" 
-            id="api-key-input" 
-            placeholder="کلید API خود را اینجا وارد کنید" 
-            class="modal-input"
-          />
-          <button 
-            type="submit" 
-            class="modal-button">
-            ذخیره و شروع گفتگو
-          </button>
+        <form id="settings-form">
+          
+          <!-- Provider Selection -->
+          <fieldset class="form-group">
+            <legend class="form-label">ارائه‌دهنده</legend>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="provider" value="gemini" checked>
+                <span>Gemini</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="provider" value="openai">
+                <span>OpenAI</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="provider" value="custom">
+                <span>سفارشی</span>
+              </label>
+            </div>
+          </fieldset>
+    
+          <!-- API Key -->
+          <div class="form-group">
+            <label for="api-key-input" class="form-label">کلید API</label>
+            <input 
+              type="password" 
+              id="api-key-input" 
+              placeholder="کلید API خود را اینجا وارد کنید" 
+              class="modal-input"
+              required
+            />
+          </div>
+    
+          <!-- Model Name -->
+          <div class="form-group">
+            <label for="model-name-input" class="form-label">نام مدل</label>
+            <input 
+              type="text" 
+              id="model-name-input" 
+              placeholder="مثال: gemini-2.5-flash یا gpt-4" 
+              class="modal-input"
+              required
+            />
+          </div>
+    
+          <!-- Endpoint URL (for Custom) -->
+          <div id="endpoint-url-group" class="form-group hidden">
+            <label for="endpoint-url-input" class="form-label">آدرس API (Endpoint)</label>
+            <input 
+              type="url" 
+              id="endpoint-url-input" 
+              placeholder="https://.../v1/chat/completions" 
+              class="modal-input"
+            />
+          </div>
+    
+          <button type="submit" class="modal-button">ذخیره و شروع گفتگو</button>
         </form>
       </div>
     </div>
@@ -38,7 +83,7 @@
     <div id="app-container" class="hidden">
       <header id="app-header">
         <h1>Goug AI Chat (گوگ)</h1>
-        <button id="edit-api-key-button">ویرایش کلید API</button>
+        <button id="edit-settings-button">ویرایش تنظیمات</button>
       </header>
 
       <main id="chat-container">

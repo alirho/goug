@@ -1,5 +1,5 @@
 const HISTORY_KEY = 'goug-chat-history';
-const API_KEY = 'goug-api-key';
+const SETTINGS_KEY = 'goug-chat-settings';
 
 /**
  * Saves the chat messages to localStorage.
@@ -28,21 +28,27 @@ export function loadMessages() {
 }
 
 /**
- * Saves the user's API key to localStorage.
- * @param {string} key - The API key.
+ * Saves the user's settings to localStorage.
+ * @param {object} settings - The settings object.
  */
-export function saveApiKey(key) {
+export function saveSettings(settings) {
     try {
-        localStorage.setItem(API_KEY, key);
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     } catch (e) {
-        console.error("Failed to save API key:", e);
+        console.error("Failed to save settings:", e);
     }
 }
 
 /**
- * Loads the user's API key from localStorage.
- * @returns {string|null} The API key or null if not found.
+ * Loads the user's settings from localStorage.
+ * @returns {object|null} The settings object or null if not found.
  */
-export function loadApiKey() {
-    return localStorage.getItem(API_KEY);
+export function loadSettings() {
+    try {
+        const saved = localStorage.getItem(SETTINGS_KEY);
+        return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+        console.error("Failed to load settings from storage:", e);
+        return null;
+    }
 }

@@ -60,11 +60,77 @@ body {
     width: 100%;
     max-width: 28rem;
     margin: 1rem;
+    max-height: 90vh;
+    overflow-y: auto;
 }
+.modal-content form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+fieldset.form-group {
+    padding: 0;
+    border: none;
+}
+.form-label {
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+legend.form-label {
+    margin-bottom: 0.5rem;
+}
+.radio-group {
+    display: flex;
+    gap: 0.5rem;
+    border: 1px solid var(--border-light);
+    border-radius: 0.375rem;
+    padding: 0.25rem;
+}
+.radio-label {
+    flex-grow: 1;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0.5rem 0;
+    cursor: pointer;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s, color 0.2s;
+    user-select: none;
+}
+.radio-label input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.radio-label span {
+    z-index: 1;
+}
+.radio-label input:checked + span {
+    color: white;
+}
+.radio-label input:checked::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--primary);
+    border-radius: 0.25rem;
+    z-index: 0;
+}
+
 .modal-title {
     font-size: 1.5rem;
     font-weight: 700;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
 }
 .modal-description {
     color: var(--text-muted-light);
@@ -104,6 +170,7 @@ body {
         background-color: var(--surface-dark);
         border-color: var(--border-dark);
     }
+    .radio-group { border-color: var(--border-dark); }
 }
 
 /* App Layout */
@@ -125,14 +192,15 @@ body {
     font-size: 1.25rem;
     font-weight: 700;
 }
-#edit-api-key-button {
+#edit-settings-button {
     font-size: 0.875rem;
     color: var(--primary);
     background: none;
     border: none;
     cursor: pointer;
+    white-space: nowrap;
 }
-#edit-api-key-button:hover {
+#edit-settings-button:hover {
     text-decoration: underline;
 }
 

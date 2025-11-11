@@ -9,10 +9,15 @@ class ChatUI {
      * Caches references to frequently used DOM elements.
      */
     cacheDOMElements() {
-        this.apiKeyModal = document.getElementById('api-key-modal');
-        this.apiKeyForm = document.getElementById('api-key-form');
+        this.settingsModal = document.getElementById('settings-modal');
+        this.settingsForm = document.getElementById('settings-form');
         this.apiKeyInput = document.getElementById('api-key-input');
-        this.editApiKeyButton = document.getElementById('edit-api-key-button');
+        this.modelNameInput = document.getElementById('model-name-input');
+        this.endpointUrlGroup = document.getElementById('endpoint-url-group');
+        this.endpointUrlInput = document.getElementById('endpoint-url-input');
+        this.providerRadios = this.settingsForm.elements['provider'];
+        this.editSettingsButton = document.getElementById('edit-settings-button');
+        
         this.appContainer = document.getElementById('app-container');
         this.messageList = document.getElementById('message-list');
         this.chatForm = document.getElementById('chat-form');
@@ -33,8 +38,8 @@ class ChatUI {
      */
     bindUserEvents() {
         this.chatForm.addEventListener('submit', this.handleSendMessage.bind(this));
-        this.apiKeyForm.addEventListener('submit', this.handleApiKeySave.bind(this));
-        this.editApiKeyButton.addEventListener('click', () => this.showApiKeyModal(true));
+        this.settingsForm.addEventListener('submit', this.handleSettingsSave.bind(this));
+        this.editSettingsButton.addEventListener('click', () => this.showSettingsModal(true));
         this.messageInput.addEventListener('input', this.handleTextareaInput.bind(this));
         this.messageInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -42,17 +47,22 @@ class ChatUI {
                 this.chatForm.requestSubmit();
             }
         });
+        
+        // Listener for provider change
+        for (const radio of this.providerRadios) {
+            radio.addEventListener('change', this.handleProviderChange.bind(this));
+        }
     }
 
     /**
      * Binds listeners to events emitted by the ChatEngine.
      */
     bindEngineEvents() {
-        this.engine.on('init', ({ apiKey, messages }) => {
-            this.showApiKeyModal(!apiKey);
+        this.engine.on('init', ({ settings, messages }) => {
+            this.showSettingsModal(!settings || !settings.apiKey);
             this.renderHistory(messages);
         });
-        this.engine.on('apiKeySet', () => this.showApiKeyModal(false));
+        this.engine.on('settingsSaved', () => this.showSettingsModal(false));
         this.engine.on('loading', this.toggleLoading.bind(this));
         this.engine.on('message', this.appendMessage.bind(this));
         this.engine.on('chunk', this.appendChunkToLastMessage.bind(this));
@@ -73,11 +83,38 @@ class ChatUI {
         }
     }
 
-    handleApiKeySave(e) {
+    handleSettingsSave(e) {
         e.preventDefault();
-        const key = this.apiKeyInput.value.trim();
-        if (key) {
-            this.engine.setApiKey(key);
+        const provider = this.providerRadios.value;
+        const apiKey = this.apiKeyInput.value.trim();
+        const modelName = this.modelNameInput.value.trim();
+        
+        let endpointUrl = null;
+        if (provider === 'custom') {
+            endpointUrl = this.endpointUrlInput.value.trim();
+            // Simple validation
+            if (!endpointUrl || !endpointUrl.startsWith('http')) {
+                this.displayTemporaryError('لطفاً یک آدرس API معتبر برای حالت سفارشی وارد کنید.');
+                return;
+            }
+        }
+        
+        if (apiKey && modelName) {
+            this.engine.saveSettings({ provider, apiKey, modelName, endpointUrl });
+        }
+    }
+
+    handleProviderChange() {
+        const provider = this.providerRadios.value;
+        this.endpointUrlGroup.classList.toggle('hidden', provider !== 'custom');
+        // For custom provider, the endpoint is required
+        this.endpointUrlInput.required = (provider === 'custom');
+
+        // پیشنهاد نام مدل بر اساس ارائه‌دهنده
+        if(provider === 'gemini' && !this.modelNameInput.value.includes('gemini')) {
+            this.modelNameInput.value = 'gemini-2.5-flash';
+        } else if (provider === 'openai' && !this.modelNameInput.value.includes('gpt')) {
+            this.modelNameInput.value = 'gpt-4';
         }
     }
 
@@ -98,11 +135,35 @@ class ChatUI {
         }
     }
     
-    showApiKeyModal(show) {
-        this.apiKeyModal.classList.toggle('hidden', !show);
+    showSettingsModal(show) {
+        this.settingsModal.classList.toggle('hidden', !show);
         this.appContainer.classList.toggle('hidden', show);
-        if(show) this.apiKeyInput.focus();
+        if(show) {
+            this.populateSettingsForm();
+            this.apiKeyInput.focus();
+        }
     }
+
+    /**
+     * فرم تنظیمات را با مقادیر ذخیره شده پر می‌کند
+     */
+    populateSettingsForm() {
+        const settings = this.engine.settings;
+        if (settings) {
+            this.providerRadios.value = settings.provider || 'gemini';
+            this.apiKeyInput.value = settings.apiKey || '';
+            this.modelNameInput.value = settings.modelName || '';
+            this.endpointUrlInput.value = settings.endpointUrl || '';
+        } else {
+             // Set defaults for a fresh start
+            this.providerRadios.value = 'gemini';
+            this.modelNameInput.value = 'gemini-2.5-flash';
+        }
+
+        // Trigger change to show/hide relevant fields
+        this.handleProviderChange();
+    }
+
 
     renderHistory(messages) {
         this.messageList.innerHTML = '';

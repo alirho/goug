@@ -1,36 +1,36 @@
 import EventEmitter from './eventEmitter.js';
 import * as Storage from './storageService.js';
-import { streamGeminiResponse } from './apiService.js';
+import { streamChatResponse } from './apiService.js';
 
 class ChatEngine extends EventEmitter {
     constructor() {
         super();
         this.messages = [];
         this.isLoading = false;
-        this.apiKey = null;
+        this.settings = null;
     }
 
     /**
      * Initializes the engine by loading data from storage.
      */
     init() {
-        this.apiKey = Storage.loadApiKey();
+        this.settings = Storage.loadSettings();
         this.messages = Storage.loadMessages();
         this.emit('init', {
-            apiKey: this.apiKey,
+            settings: this.settings,
             messages: this.messages,
         });
     }
 
     /**
-     * Sets a new API key and saves it to storage.
-     * @param {string} key The new API key.
+     * Sets new settings and saves them to storage.
+     * @param {object} settings The new settings object.
      */
-    setApiKey(key) {
-        if (key && typeof key === 'string') {
-            this.apiKey = key;
-            Storage.saveApiKey(key);
-            this.emit('apiKeySet', key);
+    saveSettings(settings) {
+        if (settings) {
+            this.settings = settings;
+            Storage.saveSettings(settings);
+            this.emit('settingsSaved', settings);
         }
     }
 
@@ -40,8 +40,8 @@ class ChatEngine extends EventEmitter {
      */
     async sendMessage(userInput) {
         if (!userInput || this.isLoading) return;
-        if (!this.apiKey) {
-            this.emit('error', 'کلید API تنظیم نشده است.');
+        if (!this.settings || !this.settings.apiKey) {
+            this.emit('error', 'تنظیمات API صحیح نیست. لطفاً تنظیمات را بررسی کنید.');
             return;
         }
 
@@ -60,20 +60,10 @@ class ChatEngine extends EventEmitter {
         try {
             // Prepare the history for the API call (all messages except the empty model placeholder)
             const historyForApi = this.messages.slice(0, -1);
-            const contents = historyForApi.map(msg => ({
-                role: msg.role === 'model' ? 'model' : 'user', // Ensure correct role mapping
-                parts: [{ text: msg.content }],
-            }));
+            const requestBody = this.buildRequestBody(historyForApi);
             
-            const requestBody = {
-                contents: contents,
-                systemInstruction: {
-                    parts: [{ text: 'You are a helpful assistant named Goug. Your responses should be in Persian.' }]
-                }
-            };
-
-            await streamGeminiResponse(
-                this.apiKey,
+            await streamChatResponse(
+                this.settings,
                 requestBody,
                 (chunk) => {
                     fullResponse += chunk;
@@ -106,6 +96,40 @@ class ChatEngine extends EventEmitter {
             this.setLoading(false);
         }
     }
+
+    /**
+     * بر اساس ارائه‌دهنده انتخاب شده، بدنه درخواست را می‌سازد
+     * @param {Array<object>} history - تاریخچه گفتگو
+     * @returns {object} بدنه درخواست برای API
+     */
+    buildRequestBody(history) {
+        const provider = this.settings.provider;
+
+        if (provider === 'gemini') {
+            const contents = history.map(msg => ({
+                role: msg.role === 'model' ? 'model' : 'user',
+                parts: [{ text: msg.content }],
+            }));
+            return {
+                contents: contents,
+                systemInstruction: {
+                    parts: [{ text: 'You are a helpful assistant named Goug. Your responses should be in Persian.' }]
+                }
+            };
+        } else { // For 'openai' and 'custom'
+            const messages = history.map(msg => ({
+                role: msg.role === 'model' ? 'assistant' : 'user', // OpenAI uses 'assistant'
+                content: msg.content,
+            }));
+             // Add system prompt as the first message
+            messages.unshift({
+                role: 'system',
+                content: 'You are a helpful assistant named Goug. Your responses should be in Persian.'
+            });
+            return { messages };
+        }
+    }
+
 
     /**
      * Updates the loading state and notifies listeners.
