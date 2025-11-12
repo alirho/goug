@@ -1,28 +1,28 @@
-const HISTORY_KEY = 'goug-chat-history';
+const CHATS_KEY = 'goug-all-chats';
 const SETTINGS_KEY = 'goug-chat-settings';
 
 /**
- * Saves the chat messages to localStorage.
- * @param {Array<object>} messages - The array of message objects.
+ * Saves the entire array of chat objects to localStorage.
+ * @param {Array<object>} chats - The array of chat objects.
  */
-export function saveMessages(messages) {
+export function saveAllChats(chats) {
     try {
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(messages));
+        localStorage.setItem(CHATS_KEY, JSON.stringify(chats));
     } catch (e) {
-        console.error("Failed to save messages to storage:", e);
+        console.error("Failed to save chats to storage:", e);
     }
 }
 
 /**
- * Loads chat messages from localStorage.
- * @returns {Array<object>} The array of messages or an empty array if none are found.
+ * Loads all chat objects from localStorage.
+ * @returns {Array<object>} The array of chats or an empty array if none are found.
  */
-export function loadMessages() {
+export function loadAllChats() {
     try {
-        const saved = localStorage.getItem(HISTORY_KEY);
+        const saved = localStorage.getItem(CHATS_KEY);
         return saved ? JSON.parse(saved) : [];
     } catch (e) {
-        console.error("Failed to load messages from storage:", e);
+        console.error("Failed to load chats from storage:", e);
         return [];
     }
 }

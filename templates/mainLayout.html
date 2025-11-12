@@ -3,28 +3,26 @@
     <!-- Sidebar -->
     <aside class="sidebar">
         <div class="sidebar-header">
-            <!-- Model Selector -->
-            <div class="model-selector">
-                <div class="model-icon">
-                    <span class="material-symbols-outlined">smart_toy</span>
-                </div>
-                <div class="model-info">
-                    <h1 class="model-title">چت‌بات گوگ</h1>
-                    <p class="model-subtitle">گفتگو با هوش مصنوعی</p>
-                </div>
+            <div class="logo">گوگ</div>
+        </div>
+
+        <div class="sidebar-content">
+            <div id="chat-list-container" class="chat-list">
+                <!-- Chat list items will be dynamically inserted here -->
             </div>
         </div>
         
-        <!-- Sidebar Actions -->
-        <div class="sidebar-actions">
-            <button id="edit-settings-button" class="btn btn-secondary">
-                <span class="material-symbols-outlined btn-icon">key</span>
-                <span>مدیریت کلید API</span>
-            </button>
-            <button id="new-chat-button" class="btn btn-primary">
-                <span class="material-symbols-outlined btn-icon">add</span>
-                <span>چت جدید</span>
-            </button>
+        <div class="sidebar-footer">
+            <div class="sidebar-actions">
+                <button id="new-chat-button" class="btn btn-primary">
+                    <span class="material-symbols-outlined btn-icon">add</span>
+                    <span>گپ جدید</span>
+                </button>
+                <button id="edit-settings-button" class="btn btn-secondary">
+                    <span class="material-symbols-outlined btn-icon">key</span>
+                    <span>مدیریت کلید API</span>
+                </button>
+            </div>
         </div>
     </aside>
     
@@ -32,7 +30,7 @@
     <main class="main-content">
         <!-- Header -->
         <header class="main-header">
-            <h2 class="main-title">گوگ</h2>
+            <h2 id="main-title" class="main-title">گوگ</h2>
             <button class="menu-button" id="menu-toggle-button">
                 <span class="material-symbols-outlined">menu</span>
             </button>
@@ -57,4 +55,18 @@
             </footer>
         </div>
     </main>
+</div>
+
+<!-- Generic Confirmation Modal -->
+<div id="confirmation-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 28rem;">
+        <header class="modal-header">
+            <h3 id="confirmation-modal-title" class="header-text"></h3>
+        </header>
+        <main id="confirmation-modal-body" class="modal-main-content" style="padding: 1.5rem;"></main>
+        <footer class="actions-container" style="padding: 0 1.5rem 1.5rem; margin-top: 0; border-top: none;">
+            <button type="button" class="btn btn-secondary" id="confirmation-modal-cancel">لغو</button>
+            <button type="button" class="btn btn-primary" id="confirmation-modal-confirm">تایید</button>
+        </footer>
+    </div>
 </div>

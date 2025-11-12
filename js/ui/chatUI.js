@@ -19,13 +19,13 @@ class ChatUI {
         this.sidebarManager = null;
         this.currentStreamingBubble = null;
         
-        // Cache for DOM elements that will be loaded from templates
         this.dom = {
             chatForm: null,
             messageInput: null,
             sendButton: null,
             messageList: null,
             newChatButton: null,
+            mainTitle: null,
         };
     }
 
@@ -36,18 +36,15 @@ class ChatUI {
         try {
             await this.loadLayout();
             this.cacheDOMElements();
+            this.initComponents();
             this.bindCoreEvents();
             this.bindUIEvents();
-            this.initComponents();
         } catch (error) {
             this.rootElement.innerHTML = `<p style="color: red; padding: 1rem;">خطای مهلک: بارگذاری رابط کاربری ناموفق بود. لطفاً صفحه را رفرش کنید.</p>`;
             console.error('UI Initialization failed:', error);
         }
     }
 
-    /**
-     * Loads the main HTML layout and settings modal into the root element.
-     */
     async loadLayout() {
         const [layoutHtml, modalHtml] = await Promise.all([
             loadTemplate('templates/mainLayout.html'),
@@ -56,35 +53,38 @@ class ChatUI {
         this.rootElement.innerHTML = layoutHtml + modalHtml;
     }
 
-    /**
-     * Caches references to frequently used DOM elements.
-     */
     cacheDOMElements() {
         this.dom.chatForm = document.getElementById('chat-form');
         this.dom.messageInput = document.getElementById('message-input');
         this.dom.sendButton = document.getElementById('send-button');
         this.dom.messageList = document.getElementById('message-list');
         this.dom.newChatButton = document.getElementById('new-chat-button');
+        this.dom.mainTitle = document.getElementById('main-title');
     }
 
-    /**
-     * Binds listeners to events emitted from the ChatEngine.
-     */
+    initComponents() {
+        this.messageRenderer = new MessageRenderer(this.dom.messageList);
+        this.settingsModal = new SettingsModal(this.engine);
+        this.sidebarManager = new SidebarManager(this.engine);
+    }
+
     bindCoreEvents() {
-        this.engine.on('init', ({ settings, messages }) => {
-            if (!settings) {
-                this.settingsModal.show(true);
-            }
-            if (messages.length > 0) {
-                this.messageRenderer.renderHistory(messages);
-            } else {
-                this.messageRenderer.showWelcomeMessage();
-            }
+        this.engine.on('init', ({ settings, chats, activeChat }) => {
+            if (!settings) this.settingsModal.show(true);
+            this.sidebarManager.render(chats, activeChat.id);
+            this.updateChatView(activeChat);
         });
 
+        this.engine.on('chatListUpdated', ({ chats, activeChatId }) => {
+            this.sidebarManager.render(chats, activeChatId);
+        });
+
+        this.engine.on('activeChatSwitched', (activeChat) => {
+            this.updateChatView(activeChat);
+        });
+        
         this.engine.on('message', (message) => {
             if (message.role === 'model' && message.content === '') {
-                // This is the placeholder for the streaming response
                 this.currentStreamingBubble = this.messageRenderer.appendMessage(message, true);
             } else {
                 this.messageRenderer.appendMessage(message);
@@ -92,9 +92,7 @@ class ChatUI {
         });
         
         this.engine.on('chunk', (chunk) => {
-            if (this.currentStreamingBubble) {
-                this.messageRenderer.appendChunk(this.currentStreamingBubble, chunk);
-            }
+            if (this.currentStreamingBubble) this.messageRenderer.appendChunk(this.currentStreamingBubble, chunk);
         });
         
         this.engine.on('streamEnd', () => {
@@ -109,23 +107,11 @@ class ChatUI {
             alert('تنظیمات با موفقیت ذخیره شد.');
         });
         
-        this.engine.on('error', (errorMessage) => {
-             this.messageRenderer.displayTemporaryError(errorMessage);
-        });
+        this.engine.on('error', (errorMessage) => this.messageRenderer.displayTemporaryError(errorMessage));
 
-        this.engine.on('messageRemoved', () => {
-            this.messageRenderer.removeLastMessage();
-        });
-
-        this.engine.on('newChatStarted', () => {
-            this.messageRenderer.clearMessages();
-            this.messageRenderer.showWelcomeMessage();
-        });
+        this.engine.on('messageRemoved', () => this.messageRenderer.removeLastMessage());
     }
 
-    /**
-     * Binds event listeners to user-interactive UI elements.
-     */
     bindUIEvents() {
         this.dom.chatForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -139,51 +125,35 @@ class ChatUI {
             }
         });
         
-        this.dom.newChatButton.addEventListener('click', () => this.handleNewChat());
+        this.dom.newChatButton.addEventListener('click', () => this.engine.startNewChat());
         
-        // Auto-resize textarea
         this.dom.messageInput.addEventListener('input', () => {
             const el = this.dom.messageInput;
             el.style.height = 'auto';
             el.style.height = `${el.scrollHeight}px`;
         });
     }
-
-    /**
-     * Initializes all UI sub-components.
-     */
-    initComponents() {
-        this.messageRenderer = new MessageRenderer(this.dom.messageList);
-        this.settingsModal = new SettingsModal(this.engine);
-        this.sidebarManager = new SidebarManager();
-    }
     
-    /**
-     * Handles the logic for sending a message from the UI.
-     */
     handleSendMessage() {
         const userInput = this.dom.messageInput.value.trim();
         if (userInput) {
             this.engine.sendMessage(userInput);
             this.dom.messageInput.value = '';
-            this.dom.messageInput.style.height = 'auto'; // Reset height
+            this.dom.messageInput.style.height = 'auto';
             this.dom.messageInput.focus();
         }
     }
 
-    /**
-     * Handles the click on the 'New Chat' button.
-     */
-    handleNewChat() {
-        if (confirm('آیا مطمئن هستید؟ تاریخچه چت فعلی پاک خواهد شد.')) {
-            this.engine.startNewChat();
+    updateChatView(chat) {
+        if (!chat) return;
+        this.dom.mainTitle.textContent = chat.title;
+        if (chat.messages.length > 0) {
+            this.messageRenderer.renderHistory(chat.messages);
+        } else {
+            this.messageRenderer.showWelcomeMessage();
         }
     }
     
-    /**
-     * Updates the state of the send button (enabled/disabled/spinner).
-     * @param {boolean} [isLoading=this.engine.isLoading] The current loading state.
-     */
     updateSendButtonState(isLoading = this.engine.isLoading) {
         const button = this.dom.sendButton;
         if (isLoading) {

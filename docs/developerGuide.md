@@ -14,29 +14,32 @@
 
 شما می‌توانید با استفاده از متد `chatEngine.on('eventName', callback)` به این رویدادها گوش دهید.
 
-| رویداد           | داده ارسالی (`data`)                                  | توضیحات                                                                                                  |
-| ----------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `init`            | `{ settings: object, messages: Array }`               | پس از بارگذاری اولیه تنظیمات و پیام‌ها از حافظه، یک بار فراخوانی می‌شود.                                    |
-| `settingsSaved`   | `settings: object`                                    | زمانی که تنظیمات جدید با موفقیت ذخیره می‌شوند، فراخوانی می‌شود.                                           |
-| `loading`         | `isLoading: boolean`                                  | هنگام شروع و پایان یک درخواست API، برای به‌روزرسانی وضعیت UI (مثلاً نمایش اسپینر) فراخوانی می‌شود.       |
-| `message`         | `message: object`                                     | هنگامی که یک پیام جدید (توسط کاربر یا دستیار) به تاریخچه اضافه می‌شود، فراخوانی می‌شود.                  |
-| `chunk`           | `chunk: string`                                       | برای هر قطعه از متنی که از طریق استریم دریافت می‌شود، فراخوانی می‌شود.                                      |
-| `streamEnd`       | `fullResponse: string`                                | پس از اتمام کامل استریم پاسخ، با متن کامل پاسخ فراخوانی می‌شود.                                         |
-| `error`           | `errorMessage: string`                                | در صورت بروز خطا در ارتباط با API، با پیام خطا فراخوانی می‌شود.                                           |
-| `messageRemoved`  | `undefined`                                           | اگر یک درخواست با خطا مواجه شود و پیام موقت دستیار نیاز به حذف داشته باشد، فراخوانی می‌شود.              |
+| رویداد                 | داده ارسالی (`data`)                                  | توضیحات                                                                                                  |
+| ---------------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `init`                 | `{ settings, chats, activeChat }`                     | پس از بارگذاری اولیه تنظیمات و چت‌ها از حافظه، یک بار فراخوانی می‌شود.                                    |
+| `settingsSaved`        | `settings: object`                                    | زمانی که تنظیمات جدید با موفقیت ذخیره می‌شوند، فراخوانی می‌شود.                                           |
+| `loading`              | `isLoading: boolean`                                  | هنگام شروع و پایان یک درخواست API، برای به‌روزرسانی وضعیت UI (مثلاً نمایش اسپینر) فراخوانی می‌شود.       |
+| `message`              | `message: object`                                     | هنگامی که یک پیام جدید (توسط کاربر یا دستیار) به چت فعال اضافه می‌شود، فراخوانی می‌شود.                  |
+| `chunk`                | `chunk: string`                                       | برای هر قطعه از متنی که از طریق استریم دریافت می‌شود، فراخوانی می‌شود.                                      |
+| `streamEnd`            | `fullResponse: string`                                | پس از اتمام کامل استریم پاسخ، با متن کامل پاسخ فراخوانی می‌شود.                                         |
+| `error`                | `errorMessage: string`                                | در صورت بروز خطا در ارتباط با API، با پیام خطا فراخوانی می‌شود.                                           |
+| `messageRemoved`       | `undefined`                                           | اگر یک درخواست با خطا مواجه شود و پیام موقت دستیار نیاز به حذف داشته باشد، فراخوانی می‌شود.              |
+| `chatListUpdated`      | `{ chats, activeChatId }`                             | زمانی که لیست چت‌ها تغییر می‌کند (ایجاد، حذف، تغییر نام)، فراخوانی می‌شود.                                  |
+| `activeChatSwitched`   | `activeChat: object`                                  | هنگامی که کاربر یک چت دیگر را به عنوان چت فعال انتخاب می‌کند، فراخوانی می‌شود.                            |
+
 
 **مثال استفاده:**
 ```javascript
 const chatEngine = new ChatEngine();
 
-chatEngine.on('chunk', (textChunk) => {
-    // Append textChunk to the UI
-    console.log(textChunk);
+// Re-render chat list whenever it changes
+chatEngine.on('chatListUpdated', ({ chats, activeChatId }) => {
+    renderSidebar(chats, activeChatId);
 });
 
-chatEngine.on('loading', (isLoading) => {
-    // Show or hide a spinner
-    document.getElementById('spinner').style.display = isLoading ? 'block' : 'none';
+// Load a new chat's history when switched
+chatEngine.on('activeChatSwitched', (activeChat) => {
+    renderMessages(activeChat.messages);
 });
 ```
 
@@ -46,17 +49,20 @@ chatEngine.on('loading', (isLoading) => {
 | ------------------------ | ------------------------ | ---------------------------------------------------------------------- |
 | `init()`                 | -                        | موتور را راه‌اندازی کرده و داده‌ها را از `storageService` بارگذاری می‌کند. |
 | `saveSettings(settings)` | `settings: object`       | تنظیمات جدید را دریافت و در حافظه ذخیره می‌کند.                        |
-| `sendMessage(userInput)` | `userInput: string`      | پیام کاربر را برای پردازش به Provider انتخاب‌شده ارسال می‌کند.            |
+| `sendMessage(userInput)` | `userInput: string`      | پیام کاربر را به چت فعال اضافه کرده و برای پردازش به Provider ارسال می‌کند.|
+| `startNewChat()`         | -                        | یک چت جدید و خالی ایجاد کرده و آن را به عنوان چت فعال تنظیم می‌کند.       |
+| `switchActiveChat(chatId)`| `chatId: string`        | چت مشخص شده را به عنوان چت فعال تنظیم می‌کند.                         |
+| `renameChat(chatId, newTitle)` | `chatId: string, newTitle: string` | عنوان یک چت مشخص را تغییر می‌دهد.                                     |
+| `deleteChat(chatId)`     | `chatId: string`         | یک چت مشخص را از لیست حذف می‌کند.                                      |
 
 
 **مثال استفاده:**
 ```javascript
-// Send a message
-chatEngine.sendMessage("سلام، حالت چطوره؟");
+// Switch to a different chat
+chatEngine.switchActiveChat('chat_1678886400000');
 
-// Save new settings
-const newSettings = { provider: 'openai', modelName: 'gpt-4', apiKey: '...' };
-chatEngine.saveSettings(newSettings);
+// Start a new conversation
+chatEngine.startNewChat();
 ```
 
 ## بخش ۲: راهنمای توسعه
@@ -136,8 +142,8 @@ this.providers = {
 
 تمام منطق ذخیره‌سازی در `js/services/storageService.js` کپسوله شده است. این ماژول در حال حاضر از `localStorage` استفاده می‌کند.
 اگر می‌خواهید از `IndexedDB`، `sessionStorage` یا حتی یک API در بک‌اند برای ذخیره‌سازی استفاده کنید، فقط کافی است توابع زیر را در این فایل بازنویسی کنید و مطمئن شوید که همان نوع داده را برمی‌گردانند:
--   `saveMessages(messages)`
--   `loadMessages()`
+-   `saveAllChats(chats)`
+-   `loadAllChats()`
 -   `saveSettings(settings)`
 -   `loadSettings()`
 

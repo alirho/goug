@@ -40,6 +40,15 @@ html.dark .btn-secondary:hover {
 .btn-primary:hover {
     background-color: var(--color-primary-hover);
 }
+
+.btn-danger {
+    background-color: #ef4444;
+    color: white;
+}
+.btn-danger:hover {
+    background-color: #dc2626;
+}
+
 .btn-icon {
     font-size: 1.125rem;
 }

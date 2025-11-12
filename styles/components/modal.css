@@ -25,7 +25,8 @@ html.dark .modal-content {
 .modal-header {
     display: flex;
     align-items: center;
-    padding: 0.75rem 1.5rem;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
     border-bottom: 1px solid var(--border-light);
 }
 html.dark .modal-header {
@@ -47,6 +48,20 @@ html.dark .modal-header {
 }
 .modal-main-content {
     padding: 2rem 1.5rem;
+}
+.modal-main-content p {
+    line-height: 1.6;
+    color: var(--text-secondary-light);
+}
+html.dark .modal-main-content p {
+    color: var(--text-secondary-dark);
+}
+.modal-main-content strong {
+    font-weight: 700;
+    color: var(--text-light);
+}
+html.dark .modal-main-content strong {
+    color: var(--text-dark);
 }
 .page-description {
     font-size: 1rem;
@@ -208,7 +223,7 @@ html.dark .input-group-button:hover {
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
-    padding-top: 1.5rem;
+    padding: 1rem 1.5rem;
     margin-top: 1rem;
     border-top: 1px solid var(--border-light);
 }
