@@ -1,162 +1,179 @@
 import { loadTemplate } from './templateLoader.js';
-import SettingsModal from './components/settingsModal.js';
 import MessageRenderer from './components/messageRenderer.js';
+import SettingsModal from './components/settingsModal.js';
 import SidebarManager from './components/sidebarManager.js';
 
 /**
- * Manages the overall chat user interface, orchestrating all UI components.
+ * Manages the entire UI, acting as an orchestrator for all UI components.
  */
 class ChatUI {
     /**
-     * @param {import('../chatEngine.js').default} engine The chat engine instance.
-     * @param {HTMLElement} rootElement The main container element for the UI.
+     * @param {import('../core/chatEngine.js').default} chatEngine The core chat engine instance.
+     * @param {HTMLElement} rootElement The root element to render the UI into.
      */
-    constructor(engine, rootElement) {
-        this.engine = engine;
+    constructor(chatEngine, rootElement) {
+        this.engine = chatEngine;
         this.rootElement = rootElement;
-        this.lastModelMessageBubble = null;
+        this.messageRenderer = null;
+        this.settingsModal = null;
+        this.sidebarManager = null;
+        this.currentStreamingBubble = null;
+        
+        // Cache for DOM elements that will be loaded from templates
+        this.dom = {
+            chatForm: null,
+            messageInput: null,
+            sendButton: null,
+            messageList: null,
+        };
     }
 
     /**
-     * Initializes the UI by loading templates, creating components, and binding events.
+     * Initializes the UI by loading templates, caching elements, and binding events.
      */
     async init() {
-        await this.renderLayout();
-        this.initComponents();
-        this.bindUserEvents();
-        this.bindEngineEvents();
+        try {
+            await this.loadLayout();
+            this.cacheDOMElements();
+            this.bindCoreEvents();
+            this.bindUIEvents();
+            this.initComponents();
+        } catch (error) {
+            this.rootElement.innerHTML = `<p style="color: red; padding: 1rem;">خطای مهلک: بارگذاری رابط کاربری ناموفق بود. لطفاً صفحه را رفرش کنید.</p>`;
+            console.error('UI Initialization failed:', error);
+        }
     }
 
     /**
-     * Loads main layout and settings modal templates and renders them.
+     * Loads the main HTML layout and settings modal into the root element.
      */
-    async renderLayout() {
-        const mainLayoutHtml = await loadTemplate('templates/mainLayout.html');
-        const settingsModalHtml = await loadTemplate('templates/settingsModal.html');
-        this.rootElement.innerHTML = mainLayoutHtml + settingsModalHtml;
+    async loadLayout() {
+        const [layoutHtml, modalHtml] = await Promise.all([
+            loadTemplate('templates/mainLayout.html'),
+            loadTemplate('templates/settingsModal.html')
+        ]);
+        this.rootElement.innerHTML = layoutHtml + modalHtml;
     }
 
     /**
-     * Caches DOM elements and initializes UI components.
+     * Caches references to frequently used DOM elements.
      */
-    initComponents() {
-        // Cache main elements
-        this.appContainer = document.getElementById('app-container');
-        this.messageList = document.getElementById('message-list');
-        this.chatForm = document.getElementById('chat-form');
-        this.messageInput = document.getElementById('message-input');
-        this.sendButton = document.getElementById('send-button');
-
-        // Initialize components
-        this.settingsModal = new SettingsModal(this.engine);
-        this.messageRenderer = new MessageRenderer(this.messageList);
-        this.sidebarManager = new SidebarManager();
+    cacheDOMElements() {
+        this.dom.chatForm = document.getElementById('chat-form');
+        this.dom.messageInput = document.getElementById('message-input');
+        this.dom.sendButton = document.getElementById('send-button');
+        this.dom.messageList = document.getElementById('message-list');
     }
 
     /**
-     * Binds listeners to user-triggered DOM events.
+     * Binds listeners to events emitted from the ChatEngine.
      */
-    bindUserEvents() {
-        this.chatForm.addEventListener('submit', this.handleSendMessage.bind(this));
-        this.messageInput.addEventListener('input', this.handleTextareaInput.bind(this));
-        this.messageInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                this.chatForm.requestSubmit();
-            }
-        });
-    }
-
-    /**
-     * Binds listeners to events emitted by the ChatEngine.
-     */
-    bindEngineEvents() {
+    bindCoreEvents() {
         this.engine.on('init', ({ settings, messages }) => {
-            this.appContainer.classList.toggle('hidden', !settings || !settings.apiKey);
-            this.settingsModal.show(!settings || !settings.apiKey);
-            if (settings) {
-                if (messages.length > 0) {
-                    this.messageRenderer.renderHistory(messages);
-                } else {
-                    this.messageRenderer.showWelcomeMessage();
-                }
+            if (!settings) {
+                this.settingsModal.show(true);
             }
-        });
-        this.engine.on('settingsSaved', (settings) => {
-            this.settingsModal.show(false);
-            this.appContainer.classList.remove('hidden');
-            if (this.engine.messages.length === 0) {
+            if (messages.length > 0) {
+                this.messageRenderer.renderHistory(messages);
+            } else {
                 this.messageRenderer.showWelcomeMessage();
             }
         });
-        this.engine.on('loading', this.toggleLoading.bind(this));
-        this.engine.on('message', this.handleNewMessage.bind(this));
-        this.engine.on('chunk', this.handleStreamChunk.bind(this));
-        this.engine.on('streamEnd', () => (this.lastModelMessageBubble = null));
-        this.engine.on('messageRemoved', () => this.messageRenderer.removeLastMessage());
-        this.engine.on('error', (error) => this.messageRenderer.displayTemporaryError(error));
+
+        this.engine.on('message', (message) => {
+            if (message.role === 'model' && message.content === '') {
+                // This is the placeholder for the streaming response
+                this.currentStreamingBubble = this.messageRenderer.appendMessage(message, true);
+            } else {
+                this.messageRenderer.appendMessage(message);
+            }
+        });
+        
+        this.engine.on('chunk', (chunk) => {
+            if (this.currentStreamingBubble) {
+                this.messageRenderer.appendChunk(this.currentStreamingBubble, chunk);
+            }
+        });
+        
+        this.engine.on('streamEnd', () => {
+            this.currentStreamingBubble = null;
+            this.updateSendButtonState();
+        });
+
+        this.engine.on('loading', (isLoading) => this.updateSendButtonState(isLoading));
+        
+        this.engine.on('settingsSaved', () => {
+            this.settingsModal.show(false);
+            alert('تنظیمات با موفقیت ذخیره شد.');
+        });
+        
+        this.engine.on('error', (errorMessage) => {
+             this.messageRenderer.displayTemporaryError(errorMessage);
+        });
+
+        this.engine.on('messageRemoved', () => {
+            this.messageRenderer.removeLastMessage();
+        });
+    }
+
+    /**
+     * Binds event listeners to user-interactive UI elements.
+     */
+    bindUIEvents() {
+        this.dom.chatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleSendMessage();
+        });
+
+        this.dom.messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.handleSendMessage();
+            }
+        });
+        
+        // Auto-resize textarea
+        this.dom.messageInput.addEventListener('input', () => {
+            const el = this.dom.messageInput;
+            el.style.height = 'auto';
+            el.style.height = `${el.scrollHeight}px`;
+        });
+    }
+
+    /**
+     * Initializes all UI sub-components.
+     */
+    initComponents() {
+        this.messageRenderer = new MessageRenderer(this.dom.messageList);
+        this.settingsModal = new SettingsModal(this.engine);
+        this.sidebarManager = new SidebarManager();
     }
     
-    // --- Event Handlers ---
-
     /**
-     * Handles the form submission for sending a message.
-     * @param {Event} e The submit event.
+     * Handles the logic for sending a message from the UI.
      */
-    handleSendMessage(e) {
-        e.preventDefault();
-        const userInput = this.messageInput.value.trim();
+    handleSendMessage() {
+        const userInput = this.dom.messageInput.value.trim();
         if (userInput) {
-            if (this.engine.messages.length === 0) {
-                this.messageRenderer.clearMessages();
-            }
             this.engine.sendMessage(userInput);
-            this.messageInput.value = '';
-            this.handleTextareaInput();
+            this.dom.messageInput.value = '';
+            this.dom.messageInput.style.height = 'auto'; // Reset height
+            this.dom.messageInput.focus();
         }
     }
-
+    
     /**
-     * Handles a new message from the engine and renders it.
-     * @param {object} message The message object.
+     * Updates the state of the send button (enabled/disabled/spinner).
+     * @param {boolean} [isLoading=this.engine.isLoading] The current loading state.
      */
-    handleNewMessage(message) {
-        const isStreamingPlaceholder = message.role === 'model' && message.content.length === 0;
-        const bubble = this.messageRenderer.appendMessage(message, isStreamingPlaceholder);
-        if (isStreamingPlaceholder) {
-            this.lastModelMessageBubble = bubble;
-        }
-    }
-
-    /**
-     * Handles an incoming chunk of a streaming response.
-     * @param {string} chunk The text chunk.
-     */
-    handleStreamChunk(chunk) {
-        if (this.lastModelMessageBubble) {
-            this.messageRenderer.appendChunk(this.lastModelMessageBubble, chunk);
-        }
-    }
-
-    /**
-     * Adjusts the textarea height based on its content.
-     */
-    handleTextareaInput() {
-        this.messageInput.style.height = 'auto';
-        this.messageInput.style.height = `${this.messageInput.scrollHeight}px`;
-    }
-
-    /**
-     * Toggles the loading state of the UI.
-     * @param {boolean} isLoading The new loading state.
-     */
-    toggleLoading(isLoading) {
-        this.messageInput.disabled = isLoading;
-        this.sendButton.disabled = isLoading;
+    updateSendButtonState(isLoading = this.engine.isLoading) {
+        const button = this.dom.sendButton;
         if (isLoading) {
-            this.sendButton.innerHTML = `<div class="spinner"></div>`;
+            button.disabled = true;
+            button.innerHTML = '<div class="spinner"></div>';
         } else {
-            this.sendButton.innerHTML = `<span class="material-symbols-outlined">send</span>`;
+            button.disabled = false;
+            button.innerHTML = '<span class="material-symbols-outlined">send</span>';
         }
     }
 }

@@ -87,42 +87,46 @@
 پروژه دارای یک معماری ماژولار و تمیز است تا توسعه و نگهداری آن آسان باشد:
 
 ```
-/
-├── index.html              # نقطه ورود اصلی HTML
-|
-├── styles/
-│   ├── variables.css       # متغیرهای CSS (رنگ‌ها، فونت‌ها)
+goug/
+├── index.html              # فایل ورودی اصلی
+│
+├── styles/                 # استایل‌های ماژولار
+│   ├── main.css            # نقطه ورود اصلی CSS (فقط شامل @import)
+│   ├── variables.css       # متغیرهای CSS
 │   ├── base.css            # استایل‌های پایه و ریست
-│   ├── layout.css          # ساختار اصلی چیدمان (sidebar, main)
-│   ├── components/         # استایل‌های کامپوننت‌های مجزا
-│   │   ├── buttons.css
-│   │   ├── input.css
-│   │   ├── messages.css
+│   ├── layout.css          # چیدمان اصلی برنامه
+│   ├── components/         # استایل‌های کامپوننت‌های UI
 │   │   ├── modal.css
-│   │   └── sidebar.css
+│   │   ├── sidebar.css
+│   │   ├── messages.css
+│   │   ├── input.css
+│   │   └── buttons.css
 │   └── utilities.css       # کلاس‌های کمکی (spinner, error)
 │
 ├── js/
-│   ├── core/               # منطق اصلی و غیروابسته به UI
-│   │   ├── chatEngine.js
+│   ├── core/               # منطق اصلی برنامه
+│   │   ├── chatEngine.js   # مدیریت وضعیت و ارکستراسیون
+│   │   ├── eventEmitter.js # سیستم مدیریت رویداد
+│   │   └── providers/      # منطق مخصوص هر ارائه‌دهنده API
+│   │       ├── geminiProvider.js
+│   │       ├── openaiProvider.js
+│   │       └── customProvider.js
+│   ├── services/           # سرویس‌های خارجی (API, Storage)
 │   │   ├── apiService.js
-│   │   ├── storageService.js
-│   │   └── eventEmitter.js
-│   ├── ui/                 # منطق مربوط به رابط کاربری
+│   │   └── storageService.js
+│   ├── ui/                 # منطق رابط کاربری (UI)
 │   │   ├── chatUI.js       # ارکستراتور اصلی UI
-│   │   ├── templateLoader.js # بارگذاری قالب‌های HTML
 │   │   └── components/     # کامپوننت‌های UI
-│   │       ├── messageRenderer.js
 │   │       ├── settingsModal.js
+│   │       ├── messageRenderer.js
 │   │       └── sidebarManager.js
-│   ├── utils/              # توابع کمکی
+│   ├── utils/              # ابزارهای کمکی
 │   │   └── apiErrors.js
-│   └── main.js             # نقطه ورود اصلی برنامه
+│   └── main.js             # نقطه ورود اصلی JavaScript
 │
 └── templates/              # قالب‌های HTML
     ├── mainLayout.html
     └── settingsModal.html
-
 ```
 
 

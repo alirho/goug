@@ -1,6 +1,8 @@
 import EventEmitter from './eventEmitter.js';
-import * as Storage from './storageService.js';
-import { streamChatResponse } from './apiService.js';
+import * as Storage from '../services/storageService.js';
+import { streamGeminiResponse } from './providers/geminiProvider.js';
+import { streamOpenAIResponse } from './providers/openaiProvider.js';
+import { streamCustomResponse } from './providers/customProvider.js';
 
 class ChatEngine extends EventEmitter {
     constructor() {
@@ -8,6 +10,11 @@ class ChatEngine extends EventEmitter {
         this.messages = [];
         this.isLoading = false;
         this.settings = null;
+        this.providers = {
+            gemini: streamGeminiResponse,
+            openai: streamOpenAIResponse,
+            custom: streamCustomResponse,
+        };
     }
 
     /**
@@ -35,7 +42,7 @@ class ChatEngine extends EventEmitter {
     }
 
     /**
-     * Handles sending a message to the API.
+     * Handles sending a message by delegating to the appropriate provider.
      * @param {string} userInput The text message from the user.
      */
     async sendMessage(userInput) {
@@ -45,33 +52,35 @@ class ChatEngine extends EventEmitter {
             return;
         }
 
+        const providerStreamer = this.providers[this.settings.provider];
+        if (!providerStreamer) {
+            this.emit('error', `ارائه‌دهنده ${this.settings.provider} پشتیبانی نمی‌شود.`);
+            return;
+        }
+
         this.setLoading(true);
 
         const userMessage = { role: 'user', content: userInput };
         this.messages.push(userMessage);
-        this.emit('message', userMessage); // Let UI show user message immediately
+        this.emit('message', userMessage);
 
-        // Create and add the model message placeholder to the state
         const modelMessage = { role: 'model', content: '' };
         this.messages.push(modelMessage);
-        this.emit('message', modelMessage); // Add an empty model message to UI for streaming
+        this.emit('message', modelMessage);
 
         let fullResponse = '';
         try {
-            // Prepare the history for the API call (all messages except the empty model placeholder)
             const historyForApi = this.messages.slice(0, -1);
-            const requestBody = this.buildRequestBody(historyForApi);
             
-            await streamChatResponse(
+            await providerStreamer(
                 this.settings,
-                requestBody,
+                historyForApi,
                 (chunk) => {
                     fullResponse += chunk;
-                    this.emit('chunk', chunk); // Stream chunk to UI
+                    this.emit('chunk', chunk);
                 }
             );
 
-            // Once streaming is done, update the last message in our state and save
             if (this.messages.length > 0) {
                 this.messages[this.messages.length - 1].content = fullResponse;
             }
@@ -80,56 +89,17 @@ class ChatEngine extends EventEmitter {
 
         } catch (error) {
             const errorMessage = error.message || 'یک خطای ناشناخته رخ داد.';
-            
-            // پیام مدل که برای استریم اضافه شده بود را حذف کن
-            // و UI را برای حذف عنصر آن مطلع کن
             if (this.messages.length > 0 && this.messages[this.messages.length - 1].role === 'model') {
                 this.messages.pop();
                 this.emit('messageRemoved');
             }
-            
             this.emit('error', errorMessage);
-            this.emit('streamEnd'); // برای اطمینان از پایان یافتن حالت استریم در UI
-            Storage.saveMessages(this.messages); // تاریخچه را بدون پیام ناموفق ذخیره کن
-
+            this.emit('streamEnd');
+            Storage.saveMessages(this.messages);
         } finally {
             this.setLoading(false);
         }
     }
-
-    /**
-     * بر اساس ارائه‌دهنده انتخاب شده، بدنه درخواست را می‌سازد
-     * @param {Array<object>} history - تاریخچه گفتگو
-     * @returns {object} بدنه درخواست برای API
-     */
-    buildRequestBody(history) {
-        const provider = this.settings.provider;
-
-        if (provider === 'gemini') {
-            const contents = history.map(msg => ({
-                role: msg.role === 'model' ? 'model' : 'user',
-                parts: [{ text: msg.content }],
-            }));
-            return {
-                contents: contents,
-                systemInstruction: {
-                    parts: [{ text: 'You are a helpful assistant named Goug. Your responses should be in Persian.' }]
-                }
-            };
-        } else { // For 'openai' and 'custom'
-            const messages = history.map(msg => ({
-                role: msg.role === 'model' ? 'assistant' : 'user', // OpenAI uses 'assistant'
-                content: msg.content,
-            }));
-             // Add system prompt as the first message
-            messages.unshift({
-                role: 'system',
-                content: 'You are a helpful assistant named Goug. Your responses should be in Persian.'
-            });
-            return { messages };
-        }
-    }
-
 
     /**
      * Updates the loading state and notifies listeners.

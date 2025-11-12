@@ -1,4 +1,4 @@
-import ChatEngine from './chatEngine.js';
+import ChatEngine from './core/chatEngine.js';
 import ChatUI from './ui/chatUI.js';
 
 /**

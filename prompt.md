@@ -220,3 +220,39 @@ goug/
 
 ### پرامپت ۱۹
 اینکه همه فایل‌های css را در html آوردی به نظرم خوب نیست، بهتره فقط یک فایل را در این بخش معرفی کنی.
+
+### پرامپت ۲۰
+حالا ازت می‌خوام بخش منطق پروژه را هم ماژولار کنی، مشابه کاری که با فایل‌های `chatUI.js` و css کردی.
+
+1. هر provider یک فایل جداگانه
+2. UI components جدا از core
+3. **Separation of Concerns**: UI کاملاً جدا از Core
+4. **Single Responsibility**: هر فایل یک مسئولیت
+5. **Reusability**: کامپوننت‌های قابل استفاده مجدد
+6. **Maintainability**: کد قابل نگهداری
+7. در فایل‌های **JavaScript**موارد زیر را رعایت کن:
+   - حداکثر 200 خط در هر فایل
+   - Export/Import صحیح
+   - JSDoc برای توابع
+
+ساختار پشنهادی:
+```
+goug/
+├── index.html
+├── styles/
+├── js/
+│   ├── core/
+│   │   ├── chatEngine.js
+│   │   ├── eventEmitter.js
+│   │   └── providers/
+│   │       ├── geminiProvider.js    # جداسازی هر provider
+│   │       ├── openaiProvider.js
+│   │       └── customProvider.js
+│   ├── services/
+│   │   ├── apiService.js
+│   │   └── storageService.js
+│   ├── ui/
+│   ├── utils/
+│   └── main.js
+└── templates/
+```
