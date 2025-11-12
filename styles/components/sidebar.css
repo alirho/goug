@@ -19,6 +19,9 @@ html.dark .sidebar {
 }
 
 .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     font-size: 1.5rem;
     font-weight: 900;
     color: var(--text-light);
@@ -26,6 +29,21 @@ html.dark .sidebar {
 html.dark .logo {
     color: var(--text-dark);
 }
+
+.sidebar-logo {
+    width: 3rem;
+    height: 3rem;
+}
+
+.logo {
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.logo:hover {
+    opacity: 0.8;
+}
+
 
 .sidebar-content {
     display: flex;

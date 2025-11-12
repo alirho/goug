@@ -429,3 +429,6 @@ goug/
 ```js
 Uncaught SyntaxError: The requested module 'http://127.0.0.1:8000/js/lib/markdown-it.min.js' doesn't provide an export named: 'default'
 ```
+
+### پرامپت ۳۵
+من فایل لوگوی پروژه را در مسیر `assets/images/logo.svg` قرار دادم. ازت می‌خوام این لوگو را در نوار کناری پیش از نام پروژه قرار بدی. همینطور به عنوان favicon هم استفاده کنی.
