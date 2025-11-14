@@ -30,6 +30,8 @@ class ChatUI {
             attachFileButton: null,
             fileInput: null,
             imagePreviewContainer: null,
+            lightbox: null,
+            lightboxImage: null,
         };
     }
 
@@ -67,10 +69,12 @@ class ChatUI {
         this.dom.attachFileButton = document.getElementById('attach-file-button');
         this.dom.fileInput = document.getElementById('file-input');
         this.dom.imagePreviewContainer = document.getElementById('image-preview-container');
+        this.dom.lightbox = document.getElementById('image-lightbox');
+        this.dom.lightboxImage = document.getElementById('lightbox-image');
     }
 
     initComponents() {
-        this.messageRenderer = new MessageRenderer(this.dom.messageList);
+        this.messageRenderer = new MessageRenderer(this.dom.messageList, this);
         this.settingsModal = new SettingsModal(this.engine);
         this.sidebarManager = new SidebarManager(this.engine);
     }
@@ -162,6 +166,15 @@ class ChatUI {
             const el = this.dom.messageInput;
             el.style.height = 'auto';
             el.style.height = `${el.scrollHeight}px`;
+        });
+
+        // Lightbox events
+        this.dom.lightbox.addEventListener('click', () => this.hideLightbox());
+        this.dom.lightboxImage.addEventListener('click', (e) => e.stopPropagation());
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !this.dom.lightbox.classList.contains('hidden')) {
+                this.hideLightbox();
+            }
         });
     }
 
@@ -348,6 +361,17 @@ class ChatUI {
             attachButton.disabled = false;
             button.innerHTML = '<span class="material-symbols-outlined">send</span>';
         }
+    }
+
+    // --- Lightbox Methods ---
+    showLightbox(src) {
+        this.dom.lightboxImage.src = src;
+        this.dom.lightbox.classList.remove('hidden');
+    }
+
+    hideLightbox() {
+        this.dom.lightbox.classList.add('hidden');
+        this.dom.lightboxImage.src = ''; // Clear src to stop loading if in progress
     }
 }
 

@@ -252,3 +252,25 @@ html.dark .actions-container {
     width: auto;
     padding: 0 1.5rem;
 }
+
+/* Image Lightbox Styles */
+.lightbox-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000; /* Higher than settings modal */
+    cursor: zoom-out;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+}
+
+#lightbox-image {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    cursor: default;
+    border-radius: 0.5rem;
+}

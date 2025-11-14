@@ -6,9 +6,11 @@ import markdownService from '../../services/markdownService.js';
 class MessageRenderer {
     /**
      * @param {HTMLElement} messageListContainer The DOM element where messages are displayed.
+     * @param {import('../chatUI.js').default} chatUI The main UI controller instance.
      */
-    constructor(messageListContainer) {
+    constructor(messageListContainer, chatUI) {
         this.container = messageListContainer;
+        this.chatUI = chatUI;
     }
 
     /**
@@ -40,20 +42,40 @@ class MessageRenderer {
             bubble.innerHTML = ''; // Clear default content
 
             if (message.image && message.image.data && message.image.mimeType) {
+                const imageWrapper = document.createElement('div');
+                imageWrapper.className = 'message-image-wrapper';
+
+                const placeholder = document.createElement('div');
+                placeholder.className = 'message-image-placeholder shimmer';
+                imageWrapper.appendChild(placeholder);
+
                 const img = document.createElement('img');
                 img.src = `data:${message.image.mimeType};base64,${message.image.data}`;
                 img.alt = 'تصویر بارگذاری شده';
                 img.className = 'message-image';
+                img.style.display = 'none'; // Hide until loaded
+                imageWrapper.appendChild(img);
 
-                // Handle image loading errors
+                img.onload = () => {
+                    placeholder.remove();
+                    img.style.display = 'block';
+                };
+
                 img.onerror = () => {
                     const errorSpan = document.createElement('span');
                     errorSpan.textContent = '⚠️ خطا در بارگذاری تصویر';
-                    errorSpan.style.fontStyle = 'italic';
-                    img.replaceWith(errorSpan);
+                    errorSpan.className = 'message-image-error';
+                    imageWrapper.innerHTML = '';
+                    imageWrapper.appendChild(errorSpan);
                 };
 
-                bubble.appendChild(img);
+                img.addEventListener('click', () => {
+                    if (this.chatUI) {
+                        this.chatUI.showLightbox(img.src);
+                    }
+                });
+                
+                bubble.appendChild(imageWrapper);
             }
             
             if (message.content) {

@@ -10,7 +10,8 @@ export function buildOpenAIRequestBody(history) {
     const messages = history.map(msg => {
         if (msg.role === 'user' && msg.image && msg.image.data && msg.image.mimeType) {
             const content = [];
-            if (msg.content) {
+            // Only add the text part if there is actual text content.
+            if (msg.content && msg.content.trim() !== '') {
                 content.push({ type: 'text', text: msg.content });
             }
             content.push({
