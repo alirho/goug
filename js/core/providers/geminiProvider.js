@@ -62,6 +62,20 @@ function processGeminiStream(line, onChunk) {
 }
 
 /**
+ * Extracts a detailed error message from a Gemini API response.
+ * @param {Response} response - The fetch response object.
+ * @returns {Promise<string>} A promise that resolves to the error message.
+ */
+async function getGeminiErrorMessage(response) {
+    try {
+        const errorData = await response.json();
+        return errorData?.error?.message || getErrorMessageForStatus(response.status);
+    } catch {
+        return getErrorMessageForStatus(response.status);
+    }
+}
+
+/**
  * Handles streaming responses from the Google Gemini API.
  * @param {object} settings - User settings including apiKey and modelName.
  * @param {Array<object>} history - The chat history.
@@ -82,6 +96,6 @@ export async function streamGeminiResponse(settings, history, onChunk) {
         API_URL,
         fetchOptions,
         (line) => processGeminiStream(line, onChunk),
-        async (res) => getErrorMessageForStatus(res.status)
+        getGeminiErrorMessage
     );
 }
