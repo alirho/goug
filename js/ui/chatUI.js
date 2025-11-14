@@ -165,30 +165,105 @@ class ChatUI {
         });
     }
 
+    /**
+     * Compresses an image by resizing it if it's too large and re-encoding it.
+     * Preserves PNG format, otherwise converts to JPEG.
+     * @param {string} dataUrl The base64 data URL of the image.
+     * @param {string} originalMimeType The MIME type of the original image.
+     * @param {function({data: string, mimeType: string} | null): void} callback The callback function with the compressed result, or null on error.
+     */
+    compressImage(dataUrl, originalMimeType, callback) {
+        const MAX_DIMENSION = 1200;
+        const QUALITY = 0.8;
+        const outputMimeType = originalMimeType === 'image/png' ? 'image/png' : 'image/jpeg';
+    
+        const img = new Image();
+        img.src = dataUrl;
+    
+        img.onload = () => {
+            let { width, height } = img;
+    
+            // Calculate new dimensions if either width or height is too large
+            if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+                if (width > height) {
+                    height = Math.round((height * MAX_DIMENSION) / width);
+                    width = MAX_DIMENSION;
+                } else {
+                    width = Math.round((width * MAX_DIMENSION) / height);
+                    height = MAX_DIMENSION;
+                }
+            }
+    
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Always re-encode to apply compression
+            let compressedDataUrl;
+            if (outputMimeType === 'image/png') {
+                compressedDataUrl = canvas.toDataURL(outputMimeType);
+            } else {
+                // For JPEG and other types, re-encode with quality setting
+                compressedDataUrl = canvas.toDataURL('image/jpeg', QUALITY);
+            }
+    
+            const base64Data = compressedDataUrl.split(',')[1];
+    
+            callback({ 
+                data: base64Data, 
+                mimeType: outputMimeType
+            });
+        };
+    
+        img.onerror = () => {
+            this.engine.emit('error', 'خطا در پردازش تصویر برای فشرده‌سازی.');
+            callback(null);
+        }
+    }
+
     handleFileSelect(event) {
         const file = event.target.files[0];
         if (!file) return;
-
+    
         this.dom.fileInput.value = '';
-
+    
         if (!file.type.startsWith('image/')) {
             this.engine.emit('error', 'لطفاً فقط فایل‌های تصویری را انتخاب کنید.');
             return;
         }
-
-        const MAX_FILE_SIZE_MB = 10;
-        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-            this.engine.emit('error', `حجم فایل نباید بیشتر از ${MAX_FILE_SIZE_MB} مگابایت باشد.`);
+    
+        const MAX_ORIGINAL_FILE_SIZE_MB = 10;
+        if (file.size > MAX_ORIGINAL_FILE_SIZE_MB * 1024 * 1024) {
+            this.engine.emit('error', `حجم فایل نباید بیشتر از ${MAX_ORIGINAL_FILE_SIZE_MB} مگابایت باشد.`);
             return;
         }
-
+    
         const reader = new FileReader();
         reader.onload = (e) => {
-            this.attachedImage = {
-                data: e.target.result.split(',')[1],
-                mimeType: file.type,
-            };
-            this.renderPreview();
+            const dataUrl = e.target.result;
+            const COMPRESSION_THRESHOLD_BYTES = 2 * 1024 * 1024;
+    
+            // Skip compression for GIFs to preserve animation.
+            if (file.size > COMPRESSION_THRESHOLD_BYTES && file.type !== 'image/gif') {
+                this.compressImage(dataUrl, file.type, (compressedResult) => {
+                    if (!compressedResult) return; // Error handled in compressImage
+                    
+                    this.attachedImage = {
+                        data: compressedResult.data,
+                        mimeType: compressedResult.mimeType,
+                    };
+                    this.renderPreview();
+                });
+            } else {
+                this.attachedImage = {
+                    data: dataUrl.split(',')[1],
+                    mimeType: file.type,
+                };
+                this.renderPreview();
+            }
         };
         reader.onerror = () => {
             this.engine.emit('error', 'خطایی در خواندن فایل رخ داد.');
