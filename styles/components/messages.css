@@ -91,7 +91,17 @@ html.dark .message.assistant .message-bubble {
     background-color: var(--color-primary);
     border-bottom-right-radius: 0; /* Tail on the right for RTL */
     color: white;
-    white-space: pre-wrap;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.message-image {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 0.5rem;
+    object-fit: contain;
+    align-self: flex-start;
 }
 
 @media (max-width: 768px) {

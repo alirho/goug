@@ -11,7 +11,7 @@
 .message-input {
     width: 100%;
     padding: 1rem;
-    padding-left: 3.5rem; /* Space for send button */
+    padding-left: 6.5rem; /* Space for send and attach buttons */
     border: 1px solid var(--border-light);
     border-radius: 0.75rem;
     background-color: white;
@@ -34,10 +34,9 @@ html.dark .message-input {
     box-shadow: 0 0 0 2px rgba(19, 91, 236, 0.5);
 }
 
-.send-button {
+.send-button, .attach-button {
     position: absolute;
     bottom: 0.5rem;
-    left: 0.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -45,10 +44,14 @@ html.dark .message-input {
     height: 2.5rem;
     border: none;
     border-radius: 0.5rem;
-    background-color: var(--color-primary);
-    color: white;
     cursor: pointer;
     transition: background-color 0.2s;
+}
+
+.send-button {
+    left: 0.5rem;
+    background-color: var(--color-primary);
+    color: white;
 }
 .send-button:hover {
     background-color: var(--color-primary-hover);
@@ -62,4 +65,60 @@ html.dark .send-button:disabled {
 }
 .send-button .material-symbols-outlined {
     transform: scaleX(-1); /* Flip for RTL */
+}
+
+.attach-button {
+    left: 3.5rem;
+    background-color: transparent;
+    color: var(--text-muted-light);
+}
+html.dark .attach-button {
+    color: var(--text-muted-dark);
+}
+.attach-button:hover:not(:disabled) {
+    background-color: var(--hover-light);
+    color: var(--text-light);
+}
+html.dark .attach-button:hover:not(:disabled) {
+    background-color: var(--hover-dark);
+    color: var(--text-dark);
+}
+
+/* Image Preview Styles */
+.image-preview-container {
+    padding-bottom: 0.75rem;
+    position: relative;
+    display: inline-block; /* Fit content */
+}
+
+.preview-image {
+    max-width: 100px;
+    max-height: 100px;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-light);
+}
+html.dark .preview-image {
+    border-color: var(--border-dark);
+}
+
+.preview-remove-button {
+    position: absolute;
+    top: -0.5rem;
+    right: -0.5rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    border: none;
+    background-color: var(--surface-dark);
+    color: var(--text-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    box-shadow: var(--shadow);
+}
+html.dark .preview-remove-button {
+    background-color: var(--hover-dark);
 }

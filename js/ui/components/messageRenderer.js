@@ -29,7 +29,7 @@ class MessageRenderer {
 
     /**
      * Creates and appends a single message element to the container.
-     * @param {object} message The message object { role, content }.
+     * @param {object} message The message object { role, content, image? }.
      * @param {boolean} isStreamingPlaceholder - If true, renders a typing indicator.
      * @returns {HTMLElement | null} The message bubble element if created, otherwise null.
      */
@@ -37,7 +37,22 @@ class MessageRenderer {
         const { element, bubble } = this.createMessageElement(message);
         
         if (message.role === 'user') {
-            bubble.textContent = message.content;
+            bubble.innerHTML = ''; // Clear default content
+
+            if (message.image) {
+                const img = document.createElement('img');
+                img.src = `data:${message.image.mimeType};base64,${message.image.data}`;
+                img.alt = 'تصویر بارگذاری شده';
+                img.className = 'message-image';
+                bubble.appendChild(img);
+            }
+            
+            if (message.content) {
+                const textNode = document.createElement('div');
+                textNode.textContent = message.content;
+                textNode.style.whiteSpace = 'pre-wrap';
+                bubble.appendChild(textNode);
+            }
         } else { // assistant
             if (isStreamingPlaceholder) {
                 bubble.innerHTML = this.createTypingIndicator();

@@ -7,10 +7,24 @@ import { getErrorMessageForStatus } from '../../utils/apiErrors.js';
  * @returns {object} The request body.
  */
 export function buildOpenAIRequestBody(history) {
-    const messages = history.map(msg => ({
-        role: msg.role === 'model' ? 'assistant' : 'user',
-        content: msg.content,
-    }));
+    const messages = history.map(msg => {
+        if (msg.role === 'user' && msg.image) {
+            const content = [];
+            content.push({ type: 'text', text: msg.content || '' });
+            content.push({
+                type: 'image_url',
+                image_url: {
+                    url: `data:${msg.image.mimeType};base64,${msg.image.data}`
+                }
+            });
+            return { role: 'user', content };
+        }
+        // Text-only user message or assistant message
+        return {
+            role: msg.role === 'model' ? 'assistant' : 'user',
+            content: msg.content,
+        };
+    });
     messages.unshift({
         role: 'system',
         content: 'You are a helpful assistant named Goug. Your responses should be in Persian.'

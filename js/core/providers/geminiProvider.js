@@ -7,10 +7,32 @@ import { getErrorMessageForStatus } from '../../utils/apiErrors.js';
  * @returns {object} The request body.
  */
 function buildGeminiRequestBody(history) {
-    const contents = history.map(msg => ({
-        role: msg.role === 'model' ? 'model' : 'user',
-        parts: [{ text: msg.content }],
-    }));
+    const contents = history.map(msg => {
+        const parts = [];
+
+        if (msg.role === 'user') {
+            // Text part should come before image parts for multi-modal models
+            if (msg.content) {
+                parts.push({ text: msg.content });
+            }
+            if (msg.image) {
+                parts.push({
+                    inlineData: {
+                        mimeType: msg.image.mimeType,
+                        data: msg.image.data
+                    }
+                });
+            }
+        } else { // model
+            parts.push({ text: msg.content });
+        }
+        
+        return {
+            role: msg.role === 'model' ? 'model' : 'user',
+            parts: parts
+        };
+    }).filter(c => c.parts.length > 0);
+
     return {
         contents: contents,
         systemInstruction: {

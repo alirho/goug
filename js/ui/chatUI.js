@@ -18,6 +18,7 @@ class ChatUI {
         this.settingsModal = null;
         this.sidebarManager = null;
         this.currentStreamingBubble = null;
+        this.attachedImage = null;
         
         this.dom = {
             chatForm: null,
@@ -26,6 +27,9 @@ class ChatUI {
             messageList: null,
             newChatButton: null,
             mainTitle: null,
+            attachFileButton: null,
+            fileInput: null,
+            imagePreviewContainer: null,
         };
     }
 
@@ -60,6 +64,9 @@ class ChatUI {
         this.dom.messageList = document.getElementById('message-list');
         this.dom.newChatButton = document.getElementById('new-chat-button');
         this.dom.mainTitle = document.getElementById('main-title');
+        this.dom.attachFileButton = document.getElementById('attach-file-button');
+        this.dom.fileInput = document.getElementById('file-input');
+        this.dom.imagePreviewContainer = document.getElementById('image-preview-container');
     }
 
     initComponents() {
@@ -148,25 +155,86 @@ class ChatUI {
         
         this.dom.newChatButton.addEventListener('click', () => this.engine.startNewChat());
         
+        this.dom.attachFileButton.addEventListener('click', () => this.dom.fileInput.click());
+        this.dom.fileInput.addEventListener('change', this.handleFileSelect.bind(this));
+        
         this.dom.messageInput.addEventListener('input', () => {
             const el = this.dom.messageInput;
             el.style.height = 'auto';
             el.style.height = `${el.scrollHeight}px`;
         });
     }
+
+    handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        this.dom.fileInput.value = '';
+
+        if (!file.type.startsWith('image/')) {
+            this.engine.emit('error', 'لطفاً فقط فایل‌های تصویری را انتخاب کنید.');
+            return;
+        }
+
+        const MAX_FILE_SIZE_MB = 10;
+        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+            this.engine.emit('error', `حجم فایل نباید بیشتر از ${MAX_FILE_SIZE_MB} مگابایت باشد.`);
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.attachedImage = {
+                data: e.target.result.split(',')[1],
+                mimeType: file.type,
+            };
+            this.renderPreview();
+        };
+        reader.onerror = () => {
+            this.engine.emit('error', 'خطایی در خواندن فایل رخ داد.');
+            this.clearPreview();
+        };
+        reader.readAsDataURL(file);
+    }
+    
+    renderPreview() {
+        if (!this.attachedImage) {
+            this.dom.imagePreviewContainer.classList.add('hidden');
+            this.dom.imagePreviewContainer.innerHTML = '';
+            return;
+        }
+
+        this.dom.imagePreviewContainer.innerHTML = `
+            <img src="data:${this.attachedImage.mimeType};base64,${this.attachedImage.data}" alt="Preview" class="preview-image">
+            <button class="preview-remove-button" title="حذف تصویر">×</button>
+        `;
+        this.dom.imagePreviewContainer.classList.remove('hidden');
+
+        this.dom.imagePreviewContainer.querySelector('.preview-remove-button').addEventListener('click', () => this.clearPreview());
+    }
+
+    clearPreview() {
+        this.attachedImage = null;
+        this.dom.fileInput.value = ''; // Ensure file can be re-selected
+        this.renderPreview();
+    }
     
     handleSendMessage() {
         const userInput = this.dom.messageInput.value.trim();
-        if (userInput) {
-            this.engine.sendMessage(userInput);
+        const image = this.attachedImage;
+
+        if (userInput || image) {
+            this.engine.sendMessage(userInput, image);
             this.dom.messageInput.value = '';
             this.dom.messageInput.style.height = 'auto';
             this.dom.messageInput.focus();
+            this.clearPreview();
         }
     }
 
     updateChatView(chat) {
         if (!chat) return;
+        this.clearPreview();
         this.dom.mainTitle.textContent = chat.title;
         if (chat.messages.length > 0) {
             this.messageRenderer.renderHistory(chat.messages);
@@ -177,11 +245,14 @@ class ChatUI {
     
     updateSendButtonState(isLoading = this.engine.isLoading) {
         const button = this.dom.sendButton;
+        const attachButton = this.dom.attachFileButton;
         if (isLoading) {
             button.disabled = true;
+            attachButton.disabled = true;
             button.innerHTML = '<div class="spinner"></div>';
         } else {
             button.disabled = false;
+            attachButton.disabled = false;
             button.innerHTML = '<span class="material-symbols-outlined">send</span>';
         }
     }
