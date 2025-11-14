@@ -184,8 +184,8 @@ class ChatEngine extends EventEmitter {
         return this.chats.find(c => c.id === this.activeChatId);
     }
 
-    async sendMessage(userInput) {
-        if (!userInput || this.isLoading || !this.activeChatId) return;
+    async sendMessage(userInput, image = null) {
+        if ((!userInput && !image) || this.isLoading || !this.activeChatId) return;
         if (!this.settings || (!this.settings.apiKey && this.settings.provider !== 'custom')) {
             this.emit('error', 'تنظیمات API صحیح نیست. لطفاً تنظیمات را بررسی کنید.');
             return;
@@ -203,12 +203,22 @@ class ChatEngine extends EventEmitter {
         this.setLoading(true);
 
         const userMessage = { role: 'user', content: userInput };
+        if (image) {
+            userMessage.image = image;
+        }
         activeChat.messages.push(userMessage);
         this.emit('message', userMessage);
         
         // Auto-title new chat on first message
         if (activeChat.messages.length === 1) {
-            activeChat.title = userInput.substring(0, 30) + (userInput.length > 30 ? '...' : '');
+            let title = userInput.substring(0, 30);
+            if (!title && image) {
+                title = 'گپ با تصویر';
+            }
+            if (userInput.length > 30) {
+                title += '...';
+            }
+            activeChat.title = title;
             this.emit('chatListUpdated', { chats: this.chats, activeChatId: this.activeChatId });
             this.emit('activeChatSwitched', activeChat);
         }
