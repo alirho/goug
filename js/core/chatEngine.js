@@ -36,26 +36,6 @@ class ChatEngine extends EventEmitter {
             this.settings = await Storage.loadSettings();
             this.chats = await Storage.loadAllChats();
             
-            // Migrate old messages without IDs or timestamps
-            let needsSave = false;
-            this.chats.forEach(chat => {
-                chat.messages.forEach(message => {
-                    if (!message.id) {
-                        message.id = generateMessageId();
-                        needsSave = true;
-                    }
-                    if (!message.timestamp) {
-                        // Use chat creation time as a reasonable fallback
-                        message.timestamp = chat.createdAt || Date.now();
-                        needsSave = true;
-                    }
-                });
-            });
-
-            if (needsSave) {
-                await Storage.saveAllChats(this.chats);
-            }
-
             if (this.chats.length === 0) {
                 // Creates a new chat in memory, will be saved on first message
                 this.startNewChat(false);
