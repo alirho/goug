@@ -14,9 +14,15 @@
 ```javascript
 import ChatEngine from './core/chatEngine.js';
 import * as IndexedDBStorage from './services/storageService.js';
+import { streamGeminiResponse } from './core/providers/geminiProvider.js';
 
-// یک آداپتور ذخیره‌سازی را به constructor پاس دهید
-const chatEngine = new ChatEngine({ storage: IndexedDBStorage });
+const chatEngine = new ChatEngine({
+    storage: IndexedDBStorage,
+    providers: {
+        gemini: streamGeminiResponse,
+        // ... other providers
+    }
+});
 ```
 
 #### رویدادها (Events)
@@ -57,6 +63,7 @@ chatEngine.on('activeChatSwitched', (activeChat) => {
 | `init()`                 | -                        | موتور را راه‌اندازی کرده و داده‌ها را از آداپتور ذخیره‌سازی بارگذاری می‌کند. |
 | `saveSettings(settings)` | `settings: object`       | تنظیمات جدید را دریافت و در حافظه ذخیره می‌کند.                        |
 | `sendMessage(userInput, image)` | `userInput: string`, `image?: {data, mimeType}` | پیام کاربر (و تصویر اختیاری) را به چت فعال اضافه کرده و برای پردازش ارسال می‌کند.|
+| `registerProvider(name, handler)` | `name: string, handler: Function` | یک ارائه‌دهنده جدید را به صورت پویا ثبت می‌کند. |
 | `startNewChat()`         | -                        | یک چت جدید و خالی ایجاد کرده و آن را به عنوان چت فعال تنظیم می‌کند.       |
 | `switchActiveChat(chatId)`| `chatId: string`        | چت مشخص شده را به عنوان چت فعال تنظیم می‌کند.                         |
 | `renameChat(chatId, newTitle)` | `chatId: string, newTitle: string` | عنوان یک چت مشخص را تغییر می‌دهد.                                     |
@@ -90,27 +97,13 @@ chatEngine.sendMessage('این عکس را ببین', imageObject);
 7.  **ارسال به Provider (`ChatEngine` -> `Provider`)**: تاریخچه پیام‌ها به `Provider` مربوطه ارسال می‌شود.
 8.  **ساخت بدنه درخواست (`Provider`)**: هر `Provider` مسئول تبدیل آبجکت تصویر به فرمت مورد نیاز API خود است.
 
-### چگونه یک Provider جدید اضافه کنیم؟
+### چگونه یک ارائه‌دهنده (Provider) جدید اضافه کنیم؟
 
-برای افزودن پشتیبانی از یک API جدید (مثلاً Anthropic Claude)، مراحل زیر را دنبال کنید:
+به لطف معماری ماژولار، افزودن پشتیبانی از یک API جدید (مانند Anthropic Claude) نیازی به تغییر در هسته `ChatEngine` ندارد. شما باید یک **"آداپتور ارائه‌دهنده"** ایجاد کنید که یک ماژول جاوااسکریپت با یک تابع `export` شده است.
 
-**مرحله ۱: ایجاد فایل Provider**
-یک فایل جدید در مسیر `js/core/providers/` بسازید. برای مثال: `anthropicProvider.js`.
+این تابع مسئول تبدیل تاریخچه پیام به فرمت مورد نیاز API جدید و پردازش پاسخ استریم آن است.
 
-**مرحله ۲: پیاده‌سازی تابع اصلی استریم**
-در این فایل، یک تابع `export` شده با امضای زیر ایجاد کنید:
-`async function streamAnthropicResponse(settings, history, onChunk)`
-
-**مرحله ۳: ساخت بدنه درخواست و پردازش پاسخ**
-1.  بدنه درخواست را مطابق با مستندات API بسازید.
-2.  `fetchStreamWithRetries` را از `apiService.js` فراخوانی کنید.
-3.  توابع callback برای پردازش هر خط از پاسخ و استخراج پیام خطا پیاده‌سازی کنید.
-
-**مرحله ۴: ثبت Provider جدید**
-در فایل `js/core/chatEngine.js`، Provider جدید خود را وارد (import) کرده و به مپ `this.providers` اضافه کنید.
-
-**مرحله ۵ (اختیاری): به‌روزرسانی UI**
-اگر Provider جدید نیاز به فیلدهای خاصی در تنظیمات دارد، فایل `templates/settingsModal.html` و `js/ui/components/settingsModal.js` را ویرایش کنید.
+برای مشاهده جزئیات کامل API مورد نیاز، مراحل پیاده‌سازی و مثال‌های عملی، به **[راهنمای آداپتور ارائه‌دهنده (Provider Adapter Guide)](./providerAdaptorGuide.md)** مراجعه کنید.
 
 ### چگونه UI را سفارشی‌سازی کنیم؟
 
@@ -149,8 +142,8 @@ const chatEngine = new ChatEngine({ storage: MyCustomStorage });
 
 -   **Observer (Pub/Sub)**: از طریق `EventEmitter` پیاده‌سازی شده و ارتباط بین `Core` و `UI` را مدیریت می‌کند.
 -   **Strategy**: در `chatEngine.js` برای انتخاب `Provider` در زمان اجرا استفاده می‌شود.
--   **Adapter**: الگوی آداپتور برای لایه ذخیره‌سازی استفاده شده تا `ChatEngine` بتواند با هر مکانیزم ذخیره‌سازی کار کند.
--   **Dependency Injection**: آداپتور ذخیره‌سازی به `ChatEngine` تزریق می‌شود که باعث جداسازی بیشتر کد می‌شود.
+-   **Adapter**: الگوی آداپتور برای لایه ذخیره‌سازی و ارائه‌دهندگان استفاده شده تا `ChatEngine` بتواند با هر پیاده‌سازی دلخواهی کار کند.
+-   **Dependency Injection**: آداپتور ذخیره‌سازی و ارائه‌دهندگان به `ChatEngine` تزریق می‌شوند که باعث جداسازی بیشتر کد می‌شود.
 
 ### نکات امنیتی
 
