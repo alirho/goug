@@ -37,6 +37,9 @@ class SettingsModal {
         this.geminiKeyToggle = document.getElementById('gemini-key-toggle');
         this.chatgptKeyToggle = document.getElementById('chatgpt-key-toggle');
         this.customKeyToggle = document.getElementById('custom-key-toggle');
+
+        // Security checkbox
+        this.sessionOnlyCheckbox = document.getElementById('session-only-checkbox');
     }
 
     /**
@@ -71,7 +74,17 @@ class SettingsModal {
         e.preventDefault();
         
         const settings = this.getSettingsFromForm();
-        if (settings) {
+        if (!settings) {
+            return; // Validation failed in getSettingsFromForm
+        }
+        
+        if (this.sessionOnlyCheckbox.checked) {
+            // Apply settings only for the current session without persisting
+            this.engine.settings = settings;
+            this.show(false);
+            alert('تنظیمات فقط برای این نشست اعمال شد و پس از بستن تب پاک خواهد شد.');
+        } else {
+            // Persist settings normally
             await this.engine.saveSettings(settings);
         }
     }
@@ -112,6 +125,7 @@ class SettingsModal {
      */
     populateForm() {
         this.form.reset();
+        this.sessionOnlyCheckbox.checked = false; // Default to persistent storage
         
         const settings = this.engine.settings;
         if (settings) {
