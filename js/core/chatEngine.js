@@ -1,6 +1,6 @@
 import EventEmitter from './eventEmitter.js';
 import * as MemoryStorage from '../services/memoryStorage.js';
-import { SYNC_CONFIG } from '../utils/constants.js';
+import { SYNC_CONFIG, VALIDATION_LIMITS } from '../utils/constants.js';
 // Providers are now injected, so direct imports are removed.
 
 /**
@@ -166,9 +166,21 @@ class ChatEngine extends EventEmitter {
     }
 
     async renameChat(chatId, newTitle) {
+        if (typeof newTitle !== 'string' || !newTitle.trim()) {
+            this.emit('error', 'نام گپ نمی‌تواند خالی باشد.');
+            return;
+        }
+
+        const trimmedTitle = newTitle.trim();
+
+        if (trimmedTitle.length > VALIDATION_LIMITS.MAX_CHAT_TITLE_LENGTH) {
+            this.emit('error', `نام گپ نمی‌تواند بیشتر از ${VALIDATION_LIMITS.MAX_CHAT_TITLE_LENGTH} کاراکتر باشد.`);
+            return;
+        }
+
         const chat = this.chats.find(c => c.id === chatId);
         if (chat) {
-            chat.title = newTitle;
+            chat.title = trimmedTitle;
             chat.updatedAt = Date.now();
             try {
                 await this.storage.saveChat(chat);
@@ -209,7 +221,25 @@ class ChatEngine extends EventEmitter {
     }
 
     async sendMessage(userInput, image = null) {
-        if ((!userInput && !image) || this.isLoading || !this.activeChatId) return;
+        if (this.isLoading || !this.activeChatId) return;
+
+        const hasText = typeof userInput === 'string' && userInput.trim().length > 0;
+        const hasImage = image && typeof image === 'object';
+        if (!hasText && !hasImage) return;
+
+        if (userInput && typeof userInput !== 'string') {
+            this.emit('error', 'ورودی پیام نامعتبر است.');
+            return;
+        }
+        if (hasText && userInput.length > VALIDATION_LIMITS.MAX_MESSAGE_LENGTH) {
+            this.emit('error', `متن پیام نمی‌تواند بیشتر از ${VALIDATION_LIMITS.MAX_MESSAGE_LENGTH} کاراکتر باشد.`);
+            return;
+        }
+        if (hasImage && (typeof image.data !== 'string' || !image.data || typeof image.mimeType !== 'string' || !image.mimeType)) {
+             this.emit('error', 'ساختار فایل تصویر پیوست شده نامعتبر است.');
+            return;
+        }
+
         if (!this.settings || (!this.settings.apiKey && this.settings.provider !== 'custom')) {
             this.emit('error', 'تنظیمات API صحیح نیست. لطفاً تنظیمات را بررسی کنید.');
             return;

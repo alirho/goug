@@ -31,3 +31,9 @@ export const UI_TIMEOUTS = {
 export const SYNC_CONFIG = {
     CHANNEL_NAME: 'goug-chat-sync',
 };
+
+// Input validation limits
+export const VALIDATION_LIMITS = {
+    MAX_MESSAGE_LENGTH: 50000,
+    MAX_CHAT_TITLE_LENGTH: 100,
+};
