@@ -3,6 +3,7 @@ import ChatManager from './modules/chatManager.js';
 import MessageHandler from './modules/messageHandler.js';
 import StorageManager from './modules/storageManager.js';
 import SyncManager from './modules/syncManager.js';
+import { DEFAULT_LIMITS, PRESET_LIMITS } from '../utils/constants.js';
 
 // JSDoc Type Imports
 /** @typedef {import('../types.js').Settings} Settings */
@@ -39,6 +40,7 @@ class ChatEngine extends EventEmitter {
      * @param {object} [options] - Configuration options.
      * @param {StorageAdapter} [options.storage] - یک آداپتور ذخیره‌سازی که رابط StorageAdapter را پیاده‌سازی می‌کند.
      * @param {Object.<string, ProviderHandler>} [options.providers] - یک map از نام ارائه‌دهندگان به توابع مدیریت‌کننده آن‌ها.
+     * @param {string | object} [options.limits] - نام یک پیش‌تنظیم ('web', 'ide', 'mobile', 'unlimited') یا یک آبجکت محدودیت سفارشی.
      */
     constructor(options = {}) {
         super();
@@ -51,6 +53,8 @@ class ChatEngine extends EventEmitter {
         this.isLoading = false;
         /** @type {Settings | null} */
         this.settings = null;
+        /** @type {object} */
+        this.limits = this.mergeLimits(options.limits);
         /** @type {StorageAdapter} */
         this.storage = options.storage;
         if (!this.storage) {
@@ -81,6 +85,36 @@ class ChatEngine extends EventEmitter {
                 this.registerProvider(name, options.providers[name]);
             }
         }
+    }
+
+    /**
+     * محدودیت‌های تعریف‌شده توسط کاربر را با مقادیر پیش‌فرض یا پیش‌تنظیم‌ها ادغام می‌کند.
+     * @param {string | object} [customLimits] - محدودیت‌های ارائه‌شده توسط کاربر.
+     * @returns {object} - آبجکت نهایی و ادغام‌شده محدودیت‌ها.
+     */
+    mergeLimits(customLimits) {
+        const limitsConfig = customLimits || 'web';
+        let baseLimits = JSON.parse(JSON.stringify(DEFAULT_LIMITS)); // Deep copy
+
+        if (typeof limitsConfig === 'string' && PRESET_LIMITS[limitsConfig]) {
+            const preset = PRESET_LIMITS[limitsConfig];
+            baseLimits = {
+                ...baseLimits,
+                ...preset,
+                file: { ...baseLimits.file, ...(preset.file || {}) },
+                image: { ...baseLimits.image, ...(preset.image || {}) },
+            };
+        } else if (typeof limitsConfig === 'object') {
+            const custom = limitsConfig;
+            baseLimits = {
+                ...baseLimits,
+                ...custom,
+                file: { ...baseLimits.file, ...(custom.file || {}) },
+                image: { ...baseLimits.image, ...(custom.image || {}) },
+            };
+        }
+        
+        return baseLimits;
     }
 
     /**

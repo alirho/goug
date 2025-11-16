@@ -16,6 +16,7 @@ class InputManager {
         
         /** @type {ImageData | null} */
         this.attachedImage = null;
+        this.isSubmitting = false;
 
         this.cacheDOMElements();
         this.bindEvents();
@@ -55,8 +56,16 @@ class InputManager {
      * Handles the submission of the input form.
      */
     submit() {
+        if (this.isSubmitting) return;
+
         const userInput = this.dom.messageInput.value.trim();
         const image = this.attachedImage;
+        
+        if (!userInput && !image) {
+            return; // Prevent sending empty messages
+        }
+
+        this.isSubmitting = true;
         this.onSendMessage(userInput, image);
     }
 
@@ -139,6 +148,7 @@ class InputManager {
             button.disabled = false;
             attachButton.disabled = false;
             button.innerHTML = '<span class="material-symbols-outlined">send</span>';
+            this.isSubmitting = false; // Reset submission guard when loading finishes
         }
     }
 }

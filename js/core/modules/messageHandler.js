@@ -1,5 +1,3 @@
-import { VALIDATION_LIMITS } from '../../utils/constants.js';
-
 // JSDoc Type Imports
 /** @typedef {import('../../types.js').ImageData} ImageData */
 /** @typedef {import('../chatEngine.js').default} ChatEngine */
@@ -35,6 +33,19 @@ class MessageHandler {
     async sendMessage(userInput, image = null) {
         if (this.engine.isLoading || !this.engine.activeChatId) return;
 
+        const { maxMessageLength, maxMessagesPerChat } = this.engine.limits;
+
+        // --- Provider and Settings Validation ---
+        if (!this.engine.settings || (!this.engine.settings.apiKey && this.engine.settings.provider !== 'custom')) {
+            this.engine.emit('error', 'تنظیمات API صحیح نیست. لطفاً تنظیمات را بررسی کنید.');
+            return;
+        }
+        const providerStreamer = this.engine.providers.get(this.engine.settings.provider);
+        if (!providerStreamer) {
+            this.engine.emit('error', `ارائه‌دهنده ${this.engine.settings.provider} پشتیبانی نمی‌شود.`);
+            return;
+        }
+
         // --- Input Validation ---
         const hasText = typeof userInput === 'string' && userInput.trim().length > 0;
         const hasImage = image && typeof image === 'object';
@@ -44,25 +55,22 @@ class MessageHandler {
             this.engine.emit('error', 'ورودی پیام نامعتبر است.');
             return;
         }
-        if (hasText && userInput.length > VALIDATION_LIMITS.MAX_MESSAGE_LENGTH) {
-            this.engine.emit('error', `متن پیام نمی‌تواند بیشتر از ${VALIDATION_LIMITS.MAX_MESSAGE_LENGTH} کاراکتر باشد.`);
+        if (hasText && userInput.length > maxMessageLength) {
+            this.engine.emit('error', `متن پیام نمی‌تواند بیشتر از ${maxMessageLength} کاراکتر باشد.`);
             return;
         }
         if (hasImage && (typeof image.data !== 'string' || !image.data || typeof image.mimeType !== 'string' || !image.mimeType)) {
              this.engine.emit('error', 'ساختار فایل تصویر پیوست شده نامعتبر است.');
             return;
         }
-        if (!this.engine.settings || (!this.engine.settings.apiKey && this.engine.settings.provider !== 'custom')) {
-            this.engine.emit('error', 'تنظیمات API صحیح نیست. لطفاً تنظیمات را بررسی کنید.');
-            return;
-        }
 
         const activeChat = this.engine.getActiveChat();
         if (!activeChat) return;
 
-        const providerStreamer = this.engine.providers.get(this.engine.settings.provider);
-        if (!providerStreamer) {
-            this.engine.emit('error', `ارائه‌دهنده ${this.engine.settings.provider} پشتیبانی نمی‌شود.`);
+        // --- Chat Limits Validation ---
+        const userMessageCount = activeChat.messages.filter(m => m.role === 'user').length;
+        if (maxMessagesPerChat !== Infinity && userMessageCount >= maxMessagesPerChat) {
+            this.engine.emit('error', `حداکثر ${maxMessagesPerChat} پیام در هر گپ مجاز است.`);
             return;
         }
 

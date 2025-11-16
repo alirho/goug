@@ -1,5 +1,3 @@
-import { FILE_LIMITS, IMAGE_SETTINGS } from '../../utils/constants.js';
-
 // JSDoc Type Imports
 /** @typedef {import('../../types.js').ImageData} ImageData */
 /** @typedef {import('../../core/chatEngine.js').default} ChatEngine */
@@ -38,23 +36,26 @@ class FileManager {
         const file = event.target.files[0];
         if (!file) return;
     
+        const limits = this.engine.limits;
+        
         // Reset input value to allow selecting the same file again
         this.fileInput.value = '';
     
-        if (!file.type.startsWith('image/')) {
-            this.engine.emit('error', 'لطفاً فقط فایل‌های تصویری را انتخاب کنید.');
+        const extension = (file.name.split('.').pop() || '').toLowerCase();
+        if (!limits.file.allowedMimeTypes.includes(file.type) || !limits.file.allowedExtensions.includes(extension)) {
+            this.engine.emit('error', `فرمت فایل '${extension}' مجاز نیست.`);
             return;
         }
     
-        if (file.size > FILE_LIMITS.MAX_ORIGINAL_FILE_SIZE_MB * 1024 * 1024) {
-            this.engine.emit('error', `حجم فایل نباید بیشتر از ${FILE_LIMITS.MAX_ORIGINAL_FILE_SIZE_MB} مگابایت باشد.`);
+        if (file.size > limits.file.maxOriginalFileSizeBytes) {
+            this.engine.emit('error', `حجم فایل نباید بیشتر از ${limits.file.maxOriginalFileSizeBytes / 1024 / 1024} مگابایت باشد.`);
             return;
         }
     
         const reader = new FileReader();
         reader.onload = (e) => {
             const dataUrl = e.target.result;
-            const COMPRESSION_THRESHOLD_BYTES = FILE_LIMITS.COMPRESSION_THRESHOLD_MB * 1024 * 1024;
+            const COMPRESSION_THRESHOLD_BYTES = 2 * 1024 * 1024; // Use a fixed 2MB threshold
     
             if (file.size > COMPRESSION_THRESHOLD_BYTES && file.type !== 'image/gif') {
                 this.compressImage(dataUrl, file.type, (compressedResult) => {
@@ -76,52 +77,85 @@ class FileManager {
     }
 
     /**
-     * Compresses an image by resizing and re-encoding it.
+     * Compresses an image by resizing and re-encoding it, with validation.
      * @param {string} dataUrl - The Base64 data URL of the image.
      * @param {string} originalMimeType - The original MIME type of the image.
      * @param {function(ImageData | null): void} callback - A function called with the compression result or null on error.
      */
     compressImage(dataUrl, originalMimeType, callback) {
+        const limits = this.engine.limits;
         const outputMimeType = originalMimeType === 'image/png' ? 'image/png' : 'image/jpeg';
         const img = new Image();
-        img.src = dataUrl;
-    
+        const canvas = document.createElement('canvas');
+
+        const cleanup = () => {
+            img.onload = null;
+            img.onerror = null;
+            img.src = ''; // Detach source to free memory
+            canvas.width = 1;
+            canvas.height = 1; // Clear canvas context
+        };
+
         img.onload = () => {
+            // Validate original dimensions and aspect ratio
+            if (img.width > limits.image.maxOriginalDimension || img.height > limits.image.maxOriginalDimension) {
+                this.engine.emit('error', `ابعاد تصویر (${img.width}x${img.height}) نباید از ${limits.image.maxOriginalDimension} پیکسل بیشتر باشد.`);
+                cleanup();
+                callback(null);
+                return;
+            }
+            const aspectRatio = Math.max(img.width, img.height) / Math.min(img.width, img.height);
+            if (aspectRatio > limits.image.maxAspectRatio) {
+                 this.engine.emit('error', `نسبت ابعاد تصویر (${aspectRatio.toFixed(1)}) بیش از حد مجاز (${limits.image.maxAspectRatio}) است.`);
+                 cleanup();
+                 callback(null);
+                 return;
+            }
+
             let { width, height } = img;
     
-            if (width > IMAGE_SETTINGS.MAX_DIMENSION || height > IMAGE_SETTINGS.MAX_DIMENSION) {
+            // Resize if needed
+            if (width > limits.image.maxFinalDimension || height > limits.image.maxFinalDimension) {
                 if (width > height) {
-                    height = Math.round((height * IMAGE_SETTINGS.MAX_DIMENSION) / width);
-                    width = IMAGE_SETTINGS.MAX_DIMENSION;
+                    height = Math.round((height * limits.image.maxFinalDimension) / width);
+                    width = limits.image.maxFinalDimension;
                 } else {
-                    width = Math.round((width * IMAGE_SETTINGS.MAX_DIMENSION) / height);
-                    height = IMAGE_SETTINGS.MAX_DIMENSION;
+                    width = Math.round((width * limits.image.maxFinalDimension) / height);
+                    height = limits.image.maxFinalDimension;
                 }
             }
     
-            const canvas = document.createElement('canvas');
             canvas.width = width;
             canvas.height = height;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
             
-            let compressedDataUrl;
-            if (outputMimeType === 'image/png') {
-                compressedDataUrl = canvas.toDataURL(outputMimeType);
-            } else {
-                compressedDataUrl = canvas.toDataURL('image/jpeg', IMAGE_SETTINGS.COMPRESSION_QUALITY);
+            const compressedDataUrl = canvas.toDataURL(outputMimeType, limits.image.compressionQuality);
+            const base64Data = compressedDataUrl.split(',')[1];
+            
+            // Validate compressed size (approximate)
+            const compressedSizeBytes = base64Data.length * (3 / 4);
+            if (compressedSizeBytes > limits.file.maxCompressedSizeBytes) {
+                this.engine.emit('error', `حجم فایل فشرده شده (${(compressedSizeBytes / 1024 / 1024).toFixed(1)}MB) بیشتر از حد مجاز است.`);
+                cleanup();
+                callback(null);
+                return;
             }
-    
+
             callback({ 
-                data: compressedDataUrl.split(',')[1], 
+                data: base64Data, 
                 mimeType: outputMimeType
             });
+            cleanup();
         };
     
         img.onerror = () => {
             this.engine.emit('error', 'خطا در پردازش تصویر برای فشرده‌سازی.');
+            cleanup();
             callback(null);
         };
+
+        img.src = dataUrl;
     }
 }
 

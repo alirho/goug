@@ -1,5 +1,3 @@
-import { VALIDATION_LIMITS } from '../../utils/constants.js';
-
 // JSDoc Type Imports
 /** @typedef {import('../../types.js').Chat} Chat */
 /** @typedef {import('../chatEngine.js').default} ChatEngine */
@@ -22,6 +20,12 @@ class ChatManager {
      * @returns {Promise<void>}
      */
     async startNewChat(emitUpdate = true) {
+        const { maxChats } = this.engine.limits;
+        if (maxChats !== Infinity && this.engine.chats.length >= maxChats) {
+            this.engine.emit('error', `حداکثر تعداد ${maxChats} گپ مجاز است.`);
+            return;
+        }
+        
         const now = Date.now();
         const newChat = {
             id: `chat_${now}`,
@@ -50,10 +54,11 @@ class ChatManager {
      */
     switchActiveChat(chatId) {
         if (chatId === this.engine.activeChatId) return;
-        this.engine.activeChatId = chatId;
-        const activeChat = this.getActiveChat();
-        if (activeChat) {
-            this.engine.emit('activeChatSwitched', activeChat);
+        
+        const chatToActivate = this.engine.chats.find(c => c.id === chatId);
+        if (chatToActivate) {
+            this.engine.activeChatId = chatId;
+            this.engine.emit('activeChatSwitched', chatToActivate);
             this.engine.emit('chatListUpdated', { chats: this.engine.chats, activeChatId: this.engine.activeChatId });
         }
     }
@@ -70,16 +75,17 @@ class ChatManager {
             return;
         }
 
-        const trimmedTitle = newTitle.trim();
+        const sanitizedTitle = newTitle.trim().replace(/[\r\n\0]/g, '');
+        const { maxChatTitleLength } = this.engine.limits;
 
-        if (trimmedTitle.length > VALIDATION_LIMITS.MAX_CHAT_TITLE_LENGTH) {
-            this.engine.emit('error', `نام گپ نمی‌تواند بیشتر از ${VALIDATION_LIMITS.MAX_CHAT_TITLE_LENGTH} کاراکتر باشد.`);
+        if (sanitizedTitle.length > maxChatTitleLength) {
+            this.engine.emit('error', `نام گپ نمی‌تواند بیشتر از ${maxChatTitleLength} کاراکتر باشد.`);
             return;
         }
 
         const chat = this.engine.chats.find(c => c.id === chatId);
         if (chat) {
-            chat.title = trimmedTitle;
+            chat.title = sanitizedTitle;
             chat.updatedAt = Date.now();
             await this.engine.storageManager.save(chat);
             this.engine.syncManager.broadcastUpdate();
@@ -87,6 +93,8 @@ class ChatManager {
             if (chat.id === this.engine.activeChatId) {
                  this.engine.emit('activeChatSwitched', chat);
             }
+        } else {
+            this.engine.emit('error', 'گپ مورد نظر برای تغییر نام یافت نشد.');
         }
     }
 
