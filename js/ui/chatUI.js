@@ -331,6 +331,8 @@ class ChatUI {
     }
     
     handleSendMessage() {
+        if (this.engine.isLoading) return;
+
         const userInput = this.dom.messageInput.value.trim();
         const image = this.attachedImage;
 
