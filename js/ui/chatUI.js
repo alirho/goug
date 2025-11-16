@@ -1,4 +1,4 @@
-import { loadTemplate } from './templateLoader.js';
+import { loadTemplate, loadTemplateWithPartials } from './templateLoader.js';
 import MessageRenderer from './components/messageRenderer.js';
 import SettingsModal from './components/settingsModal.js';
 import SidebarManager from './components/sidebarManager.js';
@@ -58,7 +58,7 @@ class ChatUI {
 
     async loadLayout() {
         const [layoutHtml, modalHtml] = await Promise.all([
-            loadTemplate('templates/mainLayout.html'),
+            loadTemplateWithPartials('templates/mainLayout.html'),
             loadTemplate('templates/settingsModal.html')
         ]);
         this.rootElement.innerHTML = layoutHtml + modalHtml;
