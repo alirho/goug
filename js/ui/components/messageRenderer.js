@@ -1,13 +1,17 @@
 import markdownService from '../../services/markdownService.js';
 import { UI_TIMEOUTS } from '../../utils/constants.js';
 
+// JSDoc Type Imports
+/** @typedef {import('../../types.js').Message} Message */
+/** @typedef {import('../chatUI.js').default} ChatUI */
+
 /**
- * Manages rendering messages, typing indicators, and errors in the chat UI.
+ * رندر کردن پیام‌ها، نشانگر تایپ و خطاها را در UI چت مدیریت می‌کند.
  */
 class MessageRenderer {
     /**
-     * @param {HTMLElement} messageListContainer The DOM element where messages are displayed.
-     * @param {import('../chatUI.js').default} chatUI The main UI controller instance.
+     * @param {HTMLElement} messageListContainer - المان DOM که پیام‌ها در آن نمایش داده می‌شوند.
+     * @param {ChatUI} chatUI - نمونه اصلی کنترل‌کننده UI.
      */
     constructor(messageListContainer, chatUI) {
         this.container = messageListContainer;
@@ -15,8 +19,8 @@ class MessageRenderer {
     }
 
     /**
-     * Renders the entire chat history.
-     * @param {Array<object>} messages An array of message objects.
+     * کل تاریخچه چت را رندر می‌کند.
+     * @param {Array<Message>} messages - آرایه‌ای از آبجکت‌های پیام.
      */
     renderHistory(messages) {
         this.clearMessages();
@@ -24,17 +28,17 @@ class MessageRenderer {
     }
     
     /**
-     * Clears all messages from the display.
+     * تمام پیام‌ها را از صفحه پاک می‌کند.
      */
     clearMessages() {
         this.container.innerHTML = '';
     }
 
     /**
-     * Creates and appends a single message element to the container.
-     * @param {object} message The message object { id, role, content, image?, timestamp? }.
-     * @param {boolean} isStreamingPlaceholder - If true, renders a typing indicator.
-     * @returns {HTMLElement | null} The message bubble element if created, otherwise null.
+     * یک المان پیام جدید ایجاد کرده و به انتهای لیست اضافه می‌کند.
+     * @param {Message} message - آبجکت پیام.
+     * @param {boolean} [isStreamingPlaceholder=false] - اگر true باشد، یک نشانگر تایپ رندر می‌کند.
+     * @returns {HTMLElement | null} - المان حباب پیام در صورت ایجاد، در غیر این صورت null.
      */
     appendMessage(message, isStreamingPlaceholder = false) {
         const { element, bubble } = this.createMessageElement(message);
@@ -102,9 +106,9 @@ class MessageRenderer {
     }
     
     /**
-     * Appends a chunk of text to the last message bubble during streaming and re-renders it as Markdown.
-     * @param {HTMLElement} bubbleElement The message bubble element to update.
-     * @param {string} chunk The piece of text to append.
+     * یک قطعه متن را به آخرین حباب پیام در حین استریم اضافه کرده و آن را به صورت Markdown مجدداً رندر می‌کند.
+     * @param {HTMLElement} bubbleElement - المان حباب پیام برای به‌روزرسانی.
+     * @param {string} chunk - قطعه متنی برای اضافه کردن.
      */
     appendChunk(bubbleElement, chunk) {
         // On the first chunk, remove the typing indicator
@@ -122,7 +126,7 @@ class MessageRenderer {
     }
 
     /**
-     * Removes the last message element from the container.
+     * آخرین المان پیام را از کانتینر حذف می‌کند.
      */
     removeLastMessage() {
         if (this.container.lastChild) {
@@ -131,8 +135,8 @@ class MessageRenderer {
     }
 
     /**
-     * Displays a temporary error message in the chat.
-     * @param {string} errorMessage The error message to display.
+     * یک پیام خطای موقت در چت نمایش می‌دهد.
+     * @param {string} errorMessage - پیام خطا برای نمایش.
      */
     displayTemporaryError(errorMessage) {
         const wrapper = document.createElement('div');
@@ -153,8 +157,8 @@ class MessageRenderer {
     }
     
     /**
-     * Displays a temporary success message in the chat.
-     * @param {string} successMessage The success message to display.
+     * یک پیام موفقیت‌آمیز موقت در چت نمایش می‌دهد.
+     * @param {string} successMessage - پیام موفقیت برای نمایش.
      */
     displayTemporarySuccess(successMessage) {
         const wrapper = document.createElement('div');
@@ -175,7 +179,7 @@ class MessageRenderer {
     }
     
     /**
-     * Displays the initial welcome message, rendered as Markdown.
+     * پیام خوشامدگویی اولیه را نمایش می‌دهد.
      */
     showWelcomeMessage() {
         const welcomeText = 'سلام! امروز چطور می‌توانم به شما کمک کنم؟';
@@ -191,7 +195,7 @@ class MessageRenderer {
     }
 
     /**
-     * Scrolls the message container to the bottom.
+     * محفظه پیام‌ها را به پایین اسکرول می‌کند.
      */
     scrollToBottom() {
         const chatArea = this.container.parentElement;
@@ -206,9 +210,9 @@ class MessageRenderer {
     // --- Element Creators ---
     
     /**
-     * Creates the DOM elements for a single message.
-     * @param {object} message The message object.
-     * @returns {{element: HTMLElement, bubble: HTMLElement}} The wrapper element and bubble element.
+     * المان‌های DOM برای یک پیام واحد را ایجاد می‌کند.
+     * @param {Message} message - آبجکت پیام.
+     * @returns {{element: HTMLElement, bubble: HTMLElement}} - المان کلی و المان حباب پیام.
      */
     createMessageElement(message) {
         const wrapper = document.createElement('div');

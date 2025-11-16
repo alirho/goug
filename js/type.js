@@ -1,0 +1,57 @@
+/**
+ * @file This file contains the core JSDoc type definitions for the application.
+ * These types are used across the project to provide better IntelliSense and type checking.
+ */
+
+/**
+ * @typedef {object} Message
+ * @property {string} id - شناسه یکتای پیام
+ * @property {'user' | 'model'} role - نقش فرستنده پیام
+ * @property {string} content - محتوای متنی پیام
+ * @property {number} timestamp - مهر زمانی (Timestamp) ایجاد پیام
+ * @property {ImageData} [image] - داده‌های تصویر پیوست شده (اختیاری)
+ */
+
+/**
+ * @typedef {object} ImageData
+ * @property {string} data - داده تصویر به صورت رشته Base64
+ * @property {string} mimeType - نوع MIME تصویر (مانند 'image/jpeg')
+ */
+
+/**
+ * @typedef {object} Chat
+ * @property {string} id - شناسه یکتای گپ
+ * @property {string} title - عنوان گپ
+ * @property {Array<Message>} messages - آرایه‌ای از پیام‌های داخل گپ
+ * @property {number} createdAt - مهر زمانی ایجاد گپ
+ * @property {number} updatedAt - مهر زمانی آخرین به‌روزرسانی گپ
+ * @property {string} provider - نام ارائه‌دهنده استفاده شده در گپ
+ * @property {string} modelName - نام مدل استفاده شده در گپ
+ */
+
+/**
+ * @typedef {object} Settings
+ * @property {'gemini' | 'openai' | 'custom'} provider - ارائه‌دهنده فعال
+ * @property {string} modelName - نام مدل
+ * @property {string} apiKey - کلید API
+ * @property {string} [endpointUrl] - آدرس API برای ارائه‌دهنده سفارشی (اختیاری)
+ */
+
+/**
+ * @typedef {object} StorageAdapter
+ * @property {function(): Promise<Settings|null>} loadSettings - بارگذاری تنظیمات کاربر
+ * @property {function(Settings): Promise<void>} saveSettings - ذخیره تنظیمات کاربر
+ * @property {function(): Promise<Array<Chat>>} loadAllChats - بارگذاری تمام گپ‌ها
+ * @property {function(Chat): Promise<void>} saveChat - ذخیره یا به‌روزرسانی یک گپ
+ * @property {function(string): Promise<void>} deleteChatById - حذف یک گپ با شناسه آن
+ */
+
+/**
+ * @callback ProviderHandler
+ * @param {Settings} settings - تنظیمات کاربر برای این ارائه‌دهنده
+ * @param {Array<Message>} history - تاریخچه پیام‌ها برای ارسال به API
+ * @param {(chunk: string) => void} onChunk - تابعی که برای هر قطعه از پاسخ استریم فراخوانی می‌شود
+ * @returns {Promise<void>}
+ */
+
+export {};

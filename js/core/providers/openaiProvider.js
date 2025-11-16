@@ -1,9 +1,12 @@
 import { fetchStreamWithRetries } from '../../services/apiService.js';
 import { getErrorMessageForStatus } from '../../utils/apiErrors.js';
 
+// JSDoc Type Imports
+/** @typedef {import('../../types.js').ProviderHandler} ProviderHandler */
+
 /**
  * Builds the request body for OpenAI-compatible APIs.
- * @param {Array<object>} history - The chat history.
+ * @param {Array<import('../../types.js').Message>} history - The chat history.
  * @returns {object} The request body.
  */
 export function buildOpenAIRequestBody(history) {
@@ -71,10 +74,8 @@ export async function getOpenAIErrorMessage(response) {
 }
 
 /**
- * Handles streaming responses from the OpenAI API.
- * @param {object} settings - User settings including apiKey and modelName.
- * @param {Array<object>} history - The chat history.
- * @param {Function} onChunk - Callback function for each response chunk.
+ * پاسخ‌های استریم را از OpenAI API مدیریت می‌کند.
+ * @type {ProviderHandler}
  */
 export async function streamOpenAIResponse(settings, history, onChunk) {
     const API_URL = 'https://api.openai.com/v1/chat/completions';

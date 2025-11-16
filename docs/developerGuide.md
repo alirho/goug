@@ -81,7 +81,37 @@ const imageObject = { data: 'base64_string...', mimeType: 'image/jpeg' };
 chatEngine.sendMessage('این عکس را ببین', imageObject);
 ```
 
-## بخش ۲: راهنمای توسعه
+## بخش ۲: تایپ‌های اصلی داده (Core Data Types)
+
+برای بهبود خوانایی و قابلیت نگهداری کد، پروژه از JSDoc برای تعریف تایپ‌های اصلی داده استفاده می‌کند. این تایپ‌ها در فایل `js/types.js` تعریف شده‌اند و به IDE شما برای ارائه راهنمایی بهتر کمک می‌کنند.
+
+-   **`Message`**: نماینده یک پیام در گفتگو.
+    -   `id: string`
+    -   `role: 'user' | 'model'`
+    -   `content: string`
+    -   `timestamp: number`
+    -   `image?: ImageData` (اختیاری)
+
+-   **`ImageData`**: نماینده یک تصویر پیوست شده.
+    -   `data: string` (رشته Base64)
+    -   `mimeType: string`
+
+-   **`Chat`**: نماینده یک گفتگوی کامل.
+    -   `id: string`
+    -   `title: string`
+    -   `messages: Array<Message>`
+    -   `createdAt: number`
+    -   `updatedAt: number`
+    -   `provider: string`
+    -   `modelName: string`
+
+-   **`Settings`**: نماینده تنظیمات کاربر.
+    -   `provider: 'gemini' | 'openai' | 'custom'`
+    -   `modelName: string`
+    -   `apiKey: string`
+    -   `endpointUrl?: string` (اختیاری)
+
+## بخش ۳: راهنمای توسعه
 
 این بخش به شما نشان می‌دهد چگونه قابلیت‌های جدید به برنامه اضافه کنید.
 
@@ -137,7 +167,7 @@ const chatEngine = new ChatEngine({ storage: MyCustomStorage });
 
 تمام منطق پردازش Markdown در فایل `js/services/markdownService.js` قرار دارد. برای استفاده از یک مفسر دیگر، کافی است این فایل را ویرایش کرده و متد `render(markdownText)` را با پیاده‌سازی جدید جایگزین کنید.
 
-## بخش ۳: بهترین شیوه‌ها (Best Practices)
+## بخش ۴: بهترین شیوه‌ها (Best Practices)
 
 ### الگوهای طراحی استفاده شده
 

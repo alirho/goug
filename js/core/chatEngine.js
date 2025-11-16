@@ -1,7 +1,14 @@
 import EventEmitter from './eventEmitter.js';
 import * as MemoryStorage from '../services/memoryStorage.js';
 import { SYNC_CONFIG, VALIDATION_LIMITS, STORAGE_CONFIG } from '../utils/constants.js';
-// Providers are now injected, so direct imports are removed.
+
+// JSDoc Type Imports
+/** @typedef {import('../types.js').Settings} Settings */
+/** @typedef {import('../types.js').Chat} Chat */
+/** @typedef {import('../types.js').Message} Message */
+/** @typedef {import('../types.js').ImageData} ImageData */
+/** @typedef {import('../types.js').StorageAdapter} StorageAdapter */
+/** @typedef {import('../types.js').ProviderHandler} ProviderHandler */
 
 /**
  * Generates a unique ID for a message.
@@ -13,25 +20,37 @@ function generateMessageId() {
     return `msg_${timestamp}_${randomPart}`;
 }
 
+/**
+ * موتور اصلی برنامه که وضعیت گفتگوها، ارتباط با ارائه‌دهندگان و ذخیره‌سازی را مدیریت می‌کند.
+ * @extends {EventEmitter}
+ */
 class ChatEngine extends EventEmitter {
     /**
      * @param {object} [options] - Configuration options.
-     * @param {object} [options.storage] - A storage provider implementing the storage service API.
-     * @param {object} [options.providers] - A map of provider names to their handler functions.
+     * @param {StorageAdapter} [options.storage] - یک آداپتور ذخیره‌سازی که رابط StorageAdapter را پیاده‌سازی می‌کند.
+     * @param {Object.<string, ProviderHandler>} [options.providers] - یک map از نام ارائه‌دهندگان به توابع مدیریت‌کننده آن‌ها.
      */
     constructor(options = {}) {
         super();
+        /** @type {Array<Chat>} */
         this.chats = [];
+        /** @type {string | null} */
         this.activeChatId = null;
+        /** @type {boolean} */
         this.isLoading = false;
+        /** @type {Settings | null} */
         this.settings = null;
+        /** @type {BroadcastChannel | null} */
         this.syncChannel = null;
+        /** @type {StorageAdapter} */
         this.storage = options.storage || MemoryStorage;
-
+        /** @type {Array<Chat>} */
         this.unsavedChats = [];
+        /** @type {number | null} */
         this.unsavedRetryInterval = null;
-
+        /** @type {Map<string, ProviderHandler>} */
         this.providers = new Map();
+
         if (options.providers) {
             for (const name in options.providers) {
                 this.registerProvider(name, options.providers[name]);
@@ -40,14 +59,18 @@ class ChatEngine extends EventEmitter {
     }
 
     /**
-     * Registers a new provider handler.
-     * @param {string} name - The name of the provider (e.g., 'gemini').
-     * @param {Function} handler - The async function that handles the streaming response.
+     * یک ارائه‌دهنده (Provider) جدید را در موتور ثبت می‌کند.
+     * @param {string} name - نام ارائه‌دهنده (مانند 'gemini').
+     * @param {ProviderHandler} handler - تابع async که پاسخ‌های استریم را مدیریت می‌کند.
      */
     registerProvider(name, handler) {
         this.providers.set(name, handler);
     }
 
+    /**
+     * موتور را راه‌اندازی می‌کند، داده‌ها را بارگذاری کرده و رویداد 'init' را منتشر می‌کند.
+     * @returns {Promise<void>}
+     */
     async init() {
         try {
             this.settings = await this.storage.loadSettings();
@@ -120,6 +143,11 @@ class ChatEngine extends EventEmitter {
         }
     }
 
+    /**
+     * تنظیمات جدید کاربر را ذخیره می‌کند.
+     * @param {Settings} settings - آبجکت تنظیمات جدید.
+     * @returns {Promise<void>}
+     */
     async saveSettings(settings) {
         if (settings) {
             try {
@@ -132,6 +160,11 @@ class ChatEngine extends EventEmitter {
         }
     }
 
+    /**
+     * یک گپ جدید ایجاد کرده و آن را به عنوان گپ فعال تنظیم می‌کند.
+     * @param {boolean} [emitUpdate=true] - اگر true باشد، رویدادها برای UI منتشر می‌شوند.
+     * @returns {Promise<void>}
+     */
     async startNewChat(emitUpdate = true) {
         const now = Date.now();
         const newChat = {
@@ -153,6 +186,11 @@ class ChatEngine extends EventEmitter {
         }
     }
     
+    /**
+     * گپ فعال فعلی را به گپ دیگری با شناسه مشخص تغییر می‌دهد.
+     * @param {string} chatId - شناسه گپ مورد نظر.
+     * @returns {void}
+     */
     switchActiveChat(chatId) {
         if (chatId === this.activeChatId) return;
         this.activeChatId = chatId;
@@ -163,6 +201,12 @@ class ChatEngine extends EventEmitter {
         }
     }
 
+    /**
+     * عنوان یک گپ مشخص را تغییر می‌دهد.
+     * @param {string} chatId - شناسه گپ.
+     * @param {string} newTitle - عنوان جدید.
+     * @returns {Promise<void>}
+     */
     async renameChat(chatId, newTitle) {
         if (typeof newTitle !== 'string' || !newTitle.trim()) {
             this.emit('error', 'نام گپ نمی‌تواند خالی باشد.');
@@ -188,6 +232,11 @@ class ChatEngine extends EventEmitter {
         }
     }
 
+    /**
+     * یک گپ مشخص را حذف می‌کند.
+     * @param {string} chatId - شناسه گپ برای حذف.
+     * @returns {Promise<void>}
+     */
     async deleteChat(chatId) {
         this.chats = this.chats.filter(c => c.id !== chatId);
         try {
@@ -209,10 +258,20 @@ class ChatEngine extends EventEmitter {
         }
     }
 
+    /**
+     * آبجکت گپ فعال فعلی را برمی‌گرداند.
+     * @returns {Chat | undefined} آبجکت گپ فعال.
+     */
     getActiveChat() {
         return this.chats.find(c => c.id === this.activeChatId);
     }
 
+    /**
+     * یک پیام جدید از کاربر دریافت کرده، به تاریخچه اضافه می‌کند و برای دریافت پاسخ به ارائه‌دهنده ارسال می‌کند.
+     * @param {string} userInput - متن پیام کاربر.
+     * @param {ImageData | null} [image=null] - داده‌های تصویر پیوست شده (اختیاری).
+     * @returns {Promise<void>}
+     */
     async sendMessage(userInput, image = null) {
         if (this.isLoading || !this.activeChatId) return;
 
@@ -317,6 +376,11 @@ class ChatEngine extends EventEmitter {
         }
     }
 
+    /**
+     * وضعیت بارگذاری (loading) برنامه را تنظیم کرده و رویداد 'loading' را منتشر می‌کند.
+     * @param {boolean} state - وضعیت جدید (true برای در حال بارگذاری).
+     * @returns {void}
+     */
     setLoading(state) {
         this.isLoading = state;
         this.emit('loading', this.isLoading);
@@ -326,7 +390,7 @@ class ChatEngine extends EventEmitter {
 
     /**
      * Tries to save a chat with a retry mechanism.
-     * @param {object} chat The chat object to save.
+     * @param {Chat} chat The chat object to save.
      * @returns {Promise<boolean>} A promise that resolves to true on success, false on failure.
      */
     async saveWithRetry(chat) {
@@ -355,7 +419,7 @@ class ChatEngine extends EventEmitter {
 
     /**
      * Handles the final failure of a save operation by adding the chat to an unsaved queue.
-     * @param {object} chat The chat that failed to save.
+     * @param {Chat} chat The chat that failed to save.
      * @param {Error} error The final error object.
      */
     handleSaveFailure(chat, error) {

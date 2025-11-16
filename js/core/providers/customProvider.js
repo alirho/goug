@@ -2,11 +2,12 @@ import { fetchStreamWithRetries } from '../../services/apiService.js';
 import { getErrorMessageForStatus } from '../../utils/apiErrors.js';
 import { buildOpenAIRequestBody, getOpenAIErrorMessage, processOpenAIStream } from './openaiProvider.js';
 
+// JSDoc Type Imports
+/** @typedef {import('../../types.js').ProviderHandler} ProviderHandler */
+
 /**
- * Handles streaming responses from a custom OpenAI-compatible API.
- * @param {object} settings - User settings including apiKey, modelName, and endpointUrl.
- * @param {Array<object>} history - The chat history.
- * @param {Function} onChunk - Callback function for each response chunk.
+ * پاسخ‌های استریم را از یک API سفارشی سازگار با OpenAI مدیریت می‌کند.
+ * @type {ProviderHandler}
  */
 export async function streamCustomResponse(settings, history, onChunk) {
     const API_URL = settings.endpointUrl;

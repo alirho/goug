@@ -1,3 +1,8 @@
+// JSDoc Type Imports
+/** @typedef {import('../types.js').StorageAdapter} StorageAdapter */
+/** @typedef {import('../types.js').Chat} Chat */
+/** @typedef {import('../types.js').Settings} Settings */
+
 const DB_NAME = 'GougDB';
 const DB_VERSION = 1;
 const CHATS_STORE_NAME = 'chats';
@@ -98,8 +103,8 @@ function checkStorageSize(data) {
 }
 
 /**
- * Saves a single chat object to IndexedDB.
- * @param {object} chat - The chat object to save.
+ * یک آبجکت چت را در IndexedDB ذخیره یا به‌روزرسانی می‌کند.
+ * @type {StorageAdapter['saveChat']}
  */
 export async function saveChat(chat) {
     checkStorageSize(chat);
@@ -119,8 +124,8 @@ export async function saveChat(chat) {
 }
 
 /**
- * Deletes a single chat from IndexedDB by its ID.
- * @param {string} chatId - The ID of the chat to delete.
+ * یک چت را با شناسه آن از IndexedDB حذف می‌کند.
+ * @type {StorageAdapter['deleteChatById']}
  */
 export async function deleteChatById(chatId) {
     try {
@@ -139,9 +144,9 @@ export async function deleteChatById(chatId) {
 }
 
 /**
- * Saves the entire array of chat objects to IndexedDB.
- * Kept for potential bulk operations or migrations.
- * @param {Array<object>} chats - The array of chat objects.
+ * تمام چت‌ها را به صورت یکجا در IndexedDB ذخیره می‌کند (با پاک کردن داده‌های قبلی).
+ * @param {Array<Chat>} chats - آرایه‌ای از آبجکت‌های چت.
+ * @returns {Promise<void>}
  */
 export async function saveAllChats(chats) {
     checkStorageSize(chats);
@@ -163,8 +168,8 @@ export async function saveAllChats(chats) {
 }
 
 /**
- * Loads all chat objects from IndexedDB.
- * @returns {Promise<Array<object>>} A promise that resolves with the array of chats.
+ * تمام چت‌ها را از IndexedDB بارگذاری می‌کند.
+ * @type {StorageAdapter['loadAllChats']}
  */
 export async function loadAllChats() {
     try {
@@ -187,8 +192,8 @@ export async function loadAllChats() {
 }
 
 /**
- * Saves the user's settings to IndexedDB.
- * @param {object} settings - The settings object.
+ * تنظیمات کاربر را در IndexedDB ذخیره می‌کند.
+ * @type {StorageAdapter['saveSettings']}
  */
 export async function saveSettings(settings) {
     try {
@@ -207,8 +212,8 @@ export async function saveSettings(settings) {
 }
 
 /**
- * Loads the user's settings from IndexedDB.
- * @returns {Promise<object|null>} A promise that resolves with the settings object or null.
+ * تنظیمات کاربر را از IndexedDB بارگذاری می‌کند.
+ * @type {StorageAdapter['loadSettings']}
  */
 export async function loadSettings() {
     try {

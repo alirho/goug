@@ -4,13 +4,18 @@ import SettingsModal from './components/settingsModal.js';
 import SidebarManager from './components/sidebarManager.js';
 import { FILE_LIMITS, IMAGE_SETTINGS } from '../utils/constants.js';
 
+// JSDoc Type Imports
+/** @typedef {import('../types.js').Settings} Settings */
+/** @typedef {import('../types.js').ImageData} ImageData */
+/** @typedef {import('../core/chatEngine.js').default} ChatEngine */
+
 /**
- * Manages the entire UI, acting as an orchestrator for all UI components.
+ * کل رابط کاربری برنامه را مدیریت کرده و به عنوان ارکستراتور برای تمام کامپوننت‌های UI عمل می‌کند.
  */
 class ChatUI {
     /**
-     * @param {import('../core/chatEngine.js').default} chatEngine The core chat engine instance.
-     * @param {HTMLElement} rootElement The root element to render the UI into.
+     * @param {ChatEngine} chatEngine - نمونه اصلی موتور چت.
+     * @param {HTMLElement} rootElement - المان اصلی که UI در آن رندر می‌شود.
      */
     constructor(chatEngine, rootElement) {
         this.engine = chatEngine;
@@ -19,6 +24,7 @@ class ChatUI {
         this.settingsModal = null;
         this.sidebarManager = null;
         this.currentStreamingBubble = null;
+        /** @type {ImageData | null} */
         this.attachedImage = null;
         
         this.dom = {
@@ -37,7 +43,8 @@ class ChatUI {
     }
 
     /**
-     * Initializes the UI by loading templates, caching elements, and binding events.
+     * UI را با بارگذاری قالب‌ها، کش کردن المان‌ها و اتصال رویدادها راه‌اندازی می‌کند.
+     * @returns {Promise<void>}
      */
     async init() {
         try {
@@ -81,9 +88,9 @@ class ChatUI {
     }
 
     /**
-     * Checks if the API settings are valid enough to run the app.
-     * @param {object | null} settings The settings object from storage.
-     * @returns {boolean} True if settings are valid, false otherwise.
+     * بررسی می‌کند که آیا تنظیمات API برای اجرای برنامه معتبر هستند یا خیر.
+     * @param {Settings | null} settings - آبجکت تنظیمات از حافظه.
+     * @returns {boolean} - اگر تنظیمات معتبر باشند true، در غیر این صورت false.
      */
     isSettingsValid(settings) {
         if (!settings || !settings.provider) {
@@ -181,11 +188,10 @@ class ChatUI {
     }
 
     /**
-     * Compresses an image by resizing it if it's too large and re-encoding it.
-     * Preserves PNG format, otherwise converts to JPEG.
-     * @param {string} dataUrl The base64 data URL of the image.
-     * @param {string} originalMimeType The MIME type of the original image.
-     * @param {function({data: string, mimeType: string} | null): void} callback The callback function with the compressed result, or null on error.
+     * یک تصویر را با تغییر اندازه (در صورت لزوم) و انکود مجدد، فشرده‌سازی می‌کند.
+     * @param {string} dataUrl - آدرس داده Base64 تصویر.
+     * @param {string} originalMimeType - نوع MIME تصویر اصلی.
+     * @param {function(ImageData | null): void} callback - تابعی که با نتیجه فشرده‌سازی یا null (در صورت خطا) فراخوانی می‌شود.
      */
     compressImage(dataUrl, originalMimeType, callback) {
         const outputMimeType = originalMimeType === 'image/png' ? 'image/png' : 'image/jpeg';
@@ -363,11 +369,18 @@ class ChatUI {
     }
 
     // --- Lightbox Methods ---
+    /**
+     * مودال نمایش تمام‌صفحه تصویر (Lightbox) را نمایش می‌دهد.
+     * @param {string} src - آدرس منبع (src) تصویر برای نمایش.
+     */
     showLightbox(src) {
         this.dom.lightboxImage.src = src;
         this.dom.lightbox.classList.remove('hidden');
     }
 
+    /**
+     * مودال نمایش تمام‌صفحه تصویر (Lightbox) را مخفی می‌کند.
+     */
     hideLightbox() {
         this.dom.lightbox.classList.add('hidden');
         this.dom.lightboxImage.src = ''; // Clear src to stop loading if in progress

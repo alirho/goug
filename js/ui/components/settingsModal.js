@@ -1,9 +1,13 @@
+// JSDoc Type Imports
+/** @typedef {import('../../types.js').Settings} Settings */
+/** @typedef {import('../../core/chatEngine.js').default} ChatEngine */
+
 /**
- * Manages the settings modal UI and logic.
+ * رابط کاربری و منطق مودال تنظیمات را مدیریت می‌کند.
  */
 class SettingsModal {
     /**
-     * @param {import('../../core/chatEngine.js').default} engine The chat engine instance.
+     * @param {ChatEngine} engine - نمونه اصلی موتور چت.
      */
     constructor(engine) {
         this.engine = engine;
@@ -49,8 +53,8 @@ class SettingsModal {
     }
 
     /**
-     * Shows or hides the settings modal.
-     * @param {boolean} shouldShow True to show, false to hide.
+     * مودال تنظیمات را نمایش یا مخفی می‌کند.
+     * @param {boolean} shouldShow - برای نمایش true و برای مخفی کردن false.
      */
     show(shouldShow) {
         this.modal.classList.toggle('hidden', !shouldShow);
@@ -73,8 +77,8 @@ class SettingsModal {
     }
     
     /**
-     * Reads the input values from the form and constructs a settings object.
-     * @returns {object|null} The settings object or null if validation fails.
+     * مقادیر ورودی را از فرم خوانده و یک آبجکت تنظیمات می‌سازد.
+     * @returns {Settings|null} - آبجکت تنظیمات یا null در صورت شکست اعتبارسنجی.
      */
     getSettingsFromForm() {
         const geminiModel = this.geminiModelInput.value.trim();
@@ -104,7 +108,7 @@ class SettingsModal {
     }
 
     /**
-     * Populates the form fields with the current settings from the engine.
+     * فیلدهای فرم را با تنظیمات فعلی از موتور پر می‌کند.
      */
     populateForm() {
         this.form.reset();

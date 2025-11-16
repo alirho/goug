@@ -1,9 +1,13 @@
+// JSDoc Type Imports
+/** @typedef {import('../../types.js').Chat} Chat */
+/** @typedef {import('../../core/chatEngine.js').default} ChatEngine */
+
 /**
- * Manages the rendering and interactions of the chat list in the sidebar.
+ * رندر و تعاملات لیست چت‌ها در سایدبار را مدیریت می‌کند.
  */
 class SidebarManager {
     /**
-     * @param {import('../../core/chatEngine.js').default} engine The chat engine instance.
+     * @param {ChatEngine} engine - نمونه اصلی موتور چت.
      */
     constructor(engine) {
         this.engine = engine;
@@ -26,9 +30,9 @@ class SidebarManager {
     }
 
     /**
-     * Renders the list of chats in the sidebar.
-     * @param {Array<object>} chats - The list of chat objects.
-     * @param {string} activeChatId - The ID of the currently active chat.
+     * لیست چت‌ها را در سایدبار رندر می‌کند.
+     * @param {Array<Chat>} chats - لیست آبجکت‌های چت.
+     * @param {string} activeChatId - شناسه چت فعال فعلی.
      */
     render(chats, activeChatId) {
         this.container.innerHTML = '';
@@ -45,7 +49,7 @@ class SidebarManager {
 
     /**
      * Creates a single chat item element for the sidebar list.
-     * @param {object} chat - The chat object.
+     * @param {Chat} chat - The chat object.
      * @param {string} activeChatId - The ID of the active chat.
      * @returns {HTMLElement} The created list item element.
      */
@@ -80,7 +84,7 @@ class SidebarManager {
 
     /**
      * Creates the three-dot action menu for a chat item.
-     * @param {object} chat - The chat object.
+     * @param {Chat} chat - The chat object.
      * @returns {HTMLElement} The menu button element.
      */
     createActionsMenu(chat) {
@@ -103,7 +107,7 @@ class SidebarManager {
     /**
      * Toggles the visibility of the actions menu.
      * @param {HTMLElement} buttonEl - The button that was clicked.
-     * @param {object} chat - The associated chat object.
+     * @param {Chat} chat - The associated chat object.
      */
     toggleMenu(buttonEl, chat) {
         if (this.activeMenu && this.activeMenu.button === buttonEl) {

@@ -2,12 +2,13 @@ import { ApiError } from '../utils/apiErrors.js';
 import { API_CONFIG } from '../utils/constants.js';
 
 /**
- * A generic function to perform fetch requests with retry logic, timeout, and stream processing.
- * @param {string} url - The API endpoint URL.
- * @param {object} options - The options for the fetch request.
- * @param {Function} processLine - A callback to process each line from the stream.
- * @param {Function} getErrorMessage - A callback to extract an error message from the response.
- * @throws {ApiError|Error} Throws an error if the request fails after all retries.
+ * یک تابع عمومی برای انجام درخواست‌های fetch با منطق تلاش مجدد، وقفه زمانی و پردازش استریم.
+ * @param {string} url - آدرس URL نقطه پایانی API.
+ * @param {RequestInit} options - گزینه‌های مربوط به درخواست fetch.
+ * @param {(line: string) => void} processLine - یک callback برای پردازش هر خط از استریم.
+ * @param {(response: Response) => Promise<string>} getErrorMessage - یک callback برای استخراج پیام خطا از پاسخ.
+ * @returns {Promise<void>}
+ * @throws {ApiError | Error} - در صورتی که درخواست پس از تمام تلاش‌ها ناموفق باشد، یک خطا پرتاب می‌کند.
  */
 export async function fetchStreamWithRetries(url, options, processLine, getErrorMessage) {
     let lastError = null;
