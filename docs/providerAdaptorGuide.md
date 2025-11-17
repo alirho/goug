@@ -13,9 +13,10 @@
  * @param {object} settings - تنظیمات کاربر شامل apiKey, modelName, و هر فیلد سفارشی دیگر.
  * @param {Array<object>} history - تاریخچه گفتگو برای ارسال به API.
  * @param {Function} onChunk - یک تابع callback که برای هر قطعه متن دریافت شده از استریم باید فراخوانی شود.
+ * @param {AbortSignal} [signal] - یک سیگنال اختیاری برای لغو درخواست.
  * @throws {ApiError|Error} - در صورت بروز خطا، باید یک Error پرتاب شود.
  */
-export async function streamMyApiResponse(settings, history, onChunk) {
+export async function streamMyApiResponse(settings, history, onChunk, signal) {
     // پیاده‌سازی شما در اینجا قرار می‌گیرد
 }
 ```
@@ -44,6 +45,9 @@ export async function streamMyApiResponse(settings, history, onChunk) {
 -   **`onChunk: (chunk: string) => void`**:
     یک تابع `callback` که **باید** برای هر قطعه از متن (`string`) که از API به صورت استریم دریافت می‌شود، فراخوانی شود. این کار برای نمایش پاسخ به صورت کلمه به کلمه در UI ضروری است.
 
+-   **`signal: AbortSignal`**:
+    (اختیاری) یک سیگنال از `AbortController` که برای لغو درخواست `fetch` استفاده می‌شود. شما **باید** این سیگنال را به درخواست شبکه خود متصل کنید تا قابلیت لغو به درستی کار کند.
+
 ## 2. مراحل پیاده‌سازی یک آداپتور جدید
 
 فرض کنید می‌خواهیم یک آداپتور برای سرویس فرضی "ExampleAI" ایجاد کنیم.
@@ -58,7 +62,7 @@ export async function streamMyApiResponse(settings, history, onChunk) {
 import { fetchStreamWithRetries } from '../../services/apiService.js';
 import { getErrorMessageForStatus, ApiError } from '../../utils/apiErrors.js';
 
-export async function streamExampleAiResponse(settings, history, onChunk) {
+export async function streamExampleAiResponse(settings, history, onChunk, signal) {
     // منطق اصلی در مراحل بعدی اضافه می‌شود
 }
 ```
@@ -99,6 +103,7 @@ const fetchOptions = {
         'Authorization': `Bearer ${settings.apiKey}`,
     },
     body: JSON.stringify(requestBody),
+    signal, // <--- سیگنال لغو را به گزینه‌ها اضافه کنید
 };
 
 await fetchStreamWithRetries(

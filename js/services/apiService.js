@@ -2,9 +2,9 @@ import { ApiError } from '../utils/apiErrors.js';
 import { API_CONFIG } from '../utils/constants.js';
 
 /**
- * یک تابع عمومی برای انجام درخواست‌های fetch با منطق تلاش مجدد، وقفه زمانی و پردازش استریم.
+ * یک تابع عمومی برای انجام درخواست‌های fetch با منطق تلاش مجدد و پردازش استریم.
  * @param {string} url - آدرس URL نقطه پایانی API.
- * @param {RequestInit} options - گزینه‌های مربوط به درخواست fetch.
+ * @param {RequestInit} options - گزینه‌های مربوط به درخواست fetch، شامل `signal` برای لغو.
  * @param {(line: string) => void} processLine - یک callback برای پردازش هر خط از استریم.
  * @param {(response: Response) => Promise<string>} getErrorMessage - یک callback برای استخراج پیام خطا از پاسخ.
  * @returns {Promise<void>}
@@ -14,12 +14,8 @@ export async function fetchStreamWithRetries(url, options, processLine, getError
     let lastError = null;
 
     for (let attempt = 0; attempt < API_CONFIG.MAX_RETRIES; attempt++) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT_MS);
-
         try {
-            const response = await fetch(url, { ...options, signal: controller.signal });
-            clearTimeout(timeoutId);
+            const response = await fetch(url, options);
 
             if (!response.ok) {
                 const message = await getErrorMessage(response);
@@ -48,12 +44,13 @@ export async function fetchStreamWithRetries(url, options, processLine, getError
             return; // Success, exit the loop
 
         } catch (error) {
-            clearTimeout(timeoutId);
+            // If the request was intentionally aborted, re-throw the error to be handled gracefully by the caller.
+            if (error.name === 'AbortError') {
+                throw error;
+            }
             if (error instanceof ApiError) throw error; // Re-throw un-retryable ApiError
             
-            lastError = (error.name === 'AbortError')
-                ? new Error("پاسخ از سرور دریافت نشد (Timeout).")
-                : new Error("اتصال به اینترنت برقرار نیست.");
+            lastError = new Error("اتصال به اینترنت برقرار نیست.");
         }
         
         // Wait before retrying

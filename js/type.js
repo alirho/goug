@@ -51,6 +51,7 @@
  * @param {Settings} settings - تنظیمات کاربر برای این ارائه‌دهنده
  * @param {Array<Message>} history - تاریخچه پیام‌ها برای ارسال به API
  * @param {(chunk: string) => void} onChunk - تابعی که برای هر قطعه از پاسخ استریم فراخوانی می‌شود
+ * @param {AbortSignal} [signal] - یک سیگنال اختیاری برای لغو درخواست
  * @returns {Promise<void>}
  */
 

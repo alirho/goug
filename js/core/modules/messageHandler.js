@@ -22,6 +22,18 @@ class MessageHandler {
     constructor(engine) {
         /** @type {ChatEngine} */
         this.engine = engine;
+        /** @type {AbortController | null} */
+        this.abortController = null;
+    }
+    
+    /**
+     * هر درخواست استریم در حال اجرا را لغو می‌کند.
+     */
+    cancelCurrentStream() {
+        if (this.abortController) {
+            this.abortController.abort();
+            this.abortController = null;
+        }
     }
 
     /**
@@ -31,7 +43,16 @@ class MessageHandler {
      * @returns {Promise<void>}
      */
     async sendMessage(userInput, image = null) {
-        if (this.engine.isLoading || !this.engine.activeChatId) return;
+        // Cancel any previous request before starting a new one.
+        this.cancelCurrentStream();
+
+        // Create a new controller for the current request.
+        const currentController = new AbortController();
+        this.abortController = currentController;
+        
+        if (this.engine.isLoading || !this.engine.activeChatId) {
+            return;
+        }
 
         const { maxMessageLength, maxMessagesPerChat } = this.engine.limits;
 
@@ -65,7 +86,9 @@ class MessageHandler {
         }
 
         const activeChat = this.engine.getActiveChat();
-        if (!activeChat) return;
+        if (!activeChat) {
+            return;
+        }
 
         // --- Chat Limits Validation ---
         const userMessageCount = activeChat.messages.filter(m => m.role === 'user').length;
@@ -113,21 +136,37 @@ class MessageHandler {
                 (chunk) => {
                     fullResponse += chunk;
                     this.engine.emit('chunk', chunk);
-                }
+                },
+                currentController.signal // Pass the signal to the provider
             );
 
             const lastMsg = activeChat.messages[activeChat.messages.length - 1];
             if (lastMsg) lastMsg.content = fullResponse;
 
         } catch (error) {
-            const errorMessage = error.message || 'یک خطای ناشناخته رخ داد.';
-            // Remove the empty model message placeholder on error
-            if (activeChat.messages.length > 0 && activeChat.messages[activeChat.messages.length - 1].role === 'model') {
-                activeChat.messages.pop();
-                this.engine.emit('messageRemoved');
+            // Gracefully handle intentional cancellations
+            if (error.name === 'AbortError') {
+                console.log('Request was intentionally cancelled.');
+                 // Remove the empty model message placeholder on cancellation
+                 if (activeChat.messages.length > 0 && activeChat.messages[activeChat.messages.length - 1].id === modelMessage.id) {
+                    activeChat.messages.pop();
+                    this.engine.emit('messageRemoved');
+                }
+            } else {
+                console.error('API call failed:', error);
+                const errorMessage = error.message || 'یک خطای ناشناخته رخ داد.';
+                // Remove the empty model message placeholder on error
+                if (activeChat.messages.length > 0 && activeChat.messages[activeChat.messages.length - 1].role === 'model') {
+                    activeChat.messages.pop();
+                    this.engine.emit('messageRemoved');
+                }
+                this.engine.emit('error', errorMessage);
             }
-            this.engine.emit('error', errorMessage);
         } finally {
+            // Only nullify if this controller is still the active one
+            if (this.abortController === currentController) {
+                this.abortController = null;
+            }
             activeChat.updatedAt = Date.now();
             await this.engine.storageManager.save(activeChat);
             this.engine.syncManager.broadcastUpdate();

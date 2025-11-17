@@ -77,7 +77,7 @@ export async function getOpenAIErrorMessage(response) {
  * پاسخ‌های استریم را از OpenAI API مدیریت می‌کند.
  * @type {ProviderHandler}
  */
-export async function streamOpenAIResponse(settings, history, onChunk) {
+export async function streamOpenAIResponse(settings, history, onChunk, signal) {
     const API_URL = 'https://api.openai.com/v1/chat/completions';
     
     const requestBody = buildOpenAIRequestBody(history);
@@ -94,6 +94,7 @@ export async function streamOpenAIResponse(settings, history, onChunk) {
             'Authorization': `Bearer ${settings.apiKey}`,
         },
         body: JSON.stringify(finalBody),
+        signal,
     };
 
     await fetchStreamWithRetries(

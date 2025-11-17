@@ -63,7 +63,7 @@ chatEngine.on('activeChatSwitched', (activeChat) => {
 | ------------------------ | ------------------------ | ---------------------------------------------------------------------- |
 | `init()`                 | -                        | موتور را راه‌اندازی کرده و داده‌ها را از آداپتور ذخیره‌سازی بارگذاری می‌کند. |
 | `saveSettings(settings)` | `settings: object`       | تنظیمات جدید را دریافت و در حافظه ذخیره می‌کند.                        |
-| `sendMessage(userInput, image)` | `userInput: string`, `image?: {data, mimeType}` | پیام کاربر (و تصویر اختیاری) را به چت فعال اضافه کرده و برای پردازش ارسال می‌کند.|
+| `sendMessage(userInput, image)` | `userInput: string`, `image?: {data, mimeType}` | پیام کاربر (و تصویر اختیاری) را ارسال می‌کند. این متد به صورت خودکار هر درخواست قبلی در حال اجرا را لغو می‌کند.|
 | `registerProvider(name, handler)` | `name: string, handler: Function` | یک ارائه‌دهنده جدید را به صورت پویا ثبت می‌کند. |
 | `startNewChat()`         | -                        | یک چت جدید و خالی ایجاد کرده و آن را به عنوان چت فعال تنظیم می‌کند.       |
 | `switchActiveChat(chatId)`| `chatId: string`        | چت مشخص شده را به عنوان چت فعال تنظیم می‌کند.                         |
@@ -91,7 +91,17 @@ chatEngine.sendMessage('این عکس را ببین', imageObject);
 -   **`Chat`**: نماینده یک گفتگوی کامل.
 -   **`Settings`**: نماینده تنظیمات کاربر.
 -   **`StorageAdapter`**: رابط (Interface) برای ماژول‌های ذخیره‌سازی.
--   **`ProviderHandler`**: رابط (Interface) برای ماژول‌های ارائه‌دهنده API.
+-   **`ProviderHandler`**: رابط (Interface) برای ماژول‌های ارائه‌دهنده API. ساختار کامل آن به شرح زیر است:
+    ```javascript
+    /**
+     * @callback ProviderHandler
+     * @param {Settings} settings - تنظیمات کاربر برای این ارائه‌دهنده
+     * @param {Array<Message>} history - تاریخچه پیام‌ها برای ارسال به API
+     * @param {(chunk: string) => void} onChunk - تابعی که برای هر قطعه از پاسخ استریم فراخوانی می‌شود
+     * @param {AbortSignal} [signal] - یک سیگنال اختیاری برای لغو درخواست
+     * @returns {Promise<void>}
+     */
+    ```
 
 برای مشاهده جزئیات کامل هر تایپ، به فایل `js/types.js` مراجعه کنید.
 

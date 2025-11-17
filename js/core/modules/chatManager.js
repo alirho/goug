@@ -17,9 +17,12 @@ class ChatManager {
     /**
      * یک گپ جدید ایجاد کرده و آن را به عنوان گپ فعال تنظیم می‌کند.
      * @param {boolean} [emitUpdate=true] - اگر true باشد، رویدادها برای UI منتشر می‌شوند.
-     * @returns {Promise<void>}
+     * @returns {Promise<Chat>}
      */
     async startNewChat(emitUpdate = true) {
+        // Cancel any ongoing stream before starting a new chat
+        this.engine.messageHandler.cancelCurrentStream();
+
         const { maxChats } = this.engine.limits;
         if (maxChats !== Infinity && this.engine.chats.length >= maxChats) {
             this.engine.emit('error', `حداکثر تعداد ${maxChats} گپ مجاز است.`);
@@ -45,6 +48,7 @@ class ChatManager {
             await this.engine.storageManager.save(newChat);
             this.engine.syncManager.broadcastUpdate();
         }
+        return newChat;
     }
     
     /**
@@ -54,6 +58,9 @@ class ChatManager {
      */
     switchActiveChat(chatId) {
         if (chatId === this.engine.activeChatId) return;
+
+        // Cancel any ongoing stream from the old chat before switching
+        this.engine.messageHandler.cancelCurrentStream();
         
         const chatToActivate = this.engine.chats.find(c => c.id === chatId);
         if (chatToActivate) {
@@ -106,6 +113,11 @@ class ChatManager {
      * @returns {Promise<void>}
      */
     async deleteChat(chatId) {
+        // If the chat to be deleted is the active one, cancel its stream first.
+        if (this.engine.activeChatId === chatId) {
+            this.engine.messageHandler.cancelCurrentStream();
+        }
+
         this.engine.chats = this.engine.chats.filter(c => c.id !== chatId);
         try {
             await this.engine.storage.deleteChatById(chatId);

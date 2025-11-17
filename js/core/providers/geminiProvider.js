@@ -82,7 +82,7 @@ async function getGeminiErrorMessage(response) {
  * پاسخ‌های استریم را از Google Gemini API مدیریت می‌کند.
  * @type {ProviderHandler}
  */
-export async function streamGeminiResponse(settings, history, onChunk) {
+export async function streamGeminiResponse(settings, history, onChunk, signal) {
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${settings.modelName}:streamGenerateContent?key=${settings.apiKey}&alt=sse`;
     
     const requestBody = buildGeminiRequestBody(history);
@@ -91,6 +91,7 @@ export async function streamGeminiResponse(settings, history, onChunk) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
+        signal,
     };
 
     await fetchStreamWithRetries(
