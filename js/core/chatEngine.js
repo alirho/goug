@@ -50,6 +50,7 @@ class ChatEngine extends EventEmitter {
      * @param {StorageAdapter} [options.storage] - یک آداپتور ذخیره‌سازی که رابط StorageAdapter را پیاده‌سازی می‌کند.
      * @param {Object.<string, ProviderHandler>} [options.providers] - یک map از نام ارائه‌دهندگان به توابع مدیریت‌کننده آن‌ها.
      * @param {string | object} [options.limits] - نام یک پیش‌تنظیم ('web', 'ide', 'mobile', 'unlimited') یا یک آبجکت محدودیت سفارشی.
+     * @param {Settings} [options.defaultProvider] - یک ارائه‌دهنده پیش‌فرض که از `config.json` بارگذاری می‌شود.
      */
     constructor(options = {}) {
         super();
@@ -66,6 +67,9 @@ class ChatEngine extends EventEmitter {
         this.limits = this.mergeLimits(options.limits);
         /** @type {StorageAdapter} */
         this.storage = options.storage;
+        /** @type {Settings | null} */
+        this.defaultProvider = options.defaultProvider || null;
+
         if (!this.storage) {
             this.storage = createInMemoryStorage();
             console.warn(`
@@ -132,12 +136,31 @@ class ChatEngine extends EventEmitter {
     }
 
     /**
+     * بررسی می‌کند که آیا تنظیمات داده شده معتبر هستند یا خیر.
+     * @param {Settings | null} settings - آبجکت تنظیمات برای بررسی.
+     * @returns {boolean}
+     */
+    isSettingsValid(settings) {
+        if (!settings || !settings.provider) return false;
+        if (settings.provider === 'custom') return !!settings.endpointUrl;
+        return !!settings.apiKey;
+    }
+
+    /**
      * موتور را راه‌اندازی می‌کند، داده‌ها را بارگذاری کرده و رویداد 'init' را منتشر می‌کند.
      * @returns {Promise<void>}
      */
     async init() {
         try {
             this.settings = await this.storage.loadSettings();
+            let isDefaultProvider = false;
+            
+            // اگر تنظیمات ذخیره‌شده توسط کاربر وجود نداشته باشد، از ارائه‌دهنده پیش‌فرض (در صورت وجود) استفاده کن
+            if (!this.settings && this.defaultProvider && this.isSettingsValid(this.defaultProvider)) {
+                this.settings = this.defaultProvider;
+                isDefaultProvider = true;
+            }
+
             let loadedChatList = await this.storage.loadChatList();
             
             this.chats = loadedChatList.filter(chat => 
@@ -169,6 +192,7 @@ class ChatEngine extends EventEmitter {
                 settings: this.settings,
                 chats: this.chats,
                 activeChat: activeChat,
+                isDefaultProvider: isDefaultProvider
             };
             this.emit('init', initPayload);
             

@@ -39,7 +39,7 @@ html.dark .typing-indicator .dot { background-color: var(--text-muted-dark); }
     50% { opacity: 0.5; }
 }
 
-/* ==================== System Messages (Error, Success) ==================== */
+/* ==================== System Messages (Error, Success, Info) ==================== */
 .system-message-wrapper {
     display: flex;
     justify-content: center;
@@ -61,7 +61,6 @@ html.dark .typing-indicator .dot { background-color: var(--text-muted-dark); }
     color: #991b1b;
     border-color: #fecaca;
 }
-
 html.dark .system-message-bubble.error {
     background-color: #3b2020;
     color: #fecaca;
@@ -73,11 +72,21 @@ html.dark .system-message-bubble.error {
     color: #14532d;
     border-color: #bbf7d0;
 }
-
 html.dark .system-message-bubble.success {
     background-color: #1c2e22;
     color: #bbf7d0;
     border-color: #2c4b37;
+}
+
+.system-message-bubble.info {
+    background-color: #eef2ff;
+    color: #4338ca;
+    border-color: #c7d2fe;
+}
+html.dark .system-message-bubble.info {
+    background-color: #22263b;
+    color: #a5b4fc;
+    border-color: #3e4c6e;
 }
 
 /* ==================== Fatal Error Display ==================== */

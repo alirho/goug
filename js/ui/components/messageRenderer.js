@@ -148,16 +148,18 @@ class MessageRenderer {
     }
 
     /**
-     * یک پیام خطای موقت در چت نمایش می‌دهد.
-     * @param {string} errorMessage - پیام خطا برای نمایش.
+     * یک پیام موقت در چت نمایش می‌دهد.
+     * @param {string} message - پیام برای نمایش.
+     * @param {'error' | 'success' | 'info'} type - نوع پیام.
+     * @private
      */
-    displayTemporaryError(errorMessage) {
+    _displayTemporarySystemMessage(message, type) {
         const wrapper = document.createElement('div');
         wrapper.className = 'system-message-wrapper';
 
         const bubble = document.createElement('div');
-        bubble.className = 'system-message-bubble error';
-        bubble.textContent = errorMessage; // برای امنیت از textContent استفاده کن
+        bubble.className = `system-message-bubble ${type}`;
+        bubble.textContent = message; // برای امنیت از textContent استفاده کن
 
         wrapper.appendChild(bubble);
         this.container.appendChild(wrapper);
@@ -168,27 +170,29 @@ class MessageRenderer {
             wrapper.addEventListener('transitionend', () => wrapper.remove());
         }, UI_TIMEOUTS.ERROR_DISPLAY_MS);
     }
+
+    /**
+     * یک پیام خطای موقت در چت نمایش می‌دهد.
+     * @param {string} errorMessage - پیام خطا برای نمایش.
+     */
+    displayTemporaryError(errorMessage) {
+        this._displayTemporarySystemMessage(errorMessage, 'error');
+    }
     
     /**
      * یک پیام موفقیت‌آمیز موقت در چت نمایش می‌دهد.
      * @param {string} successMessage - پیام موفقیت برای نمایش.
      */
     displayTemporarySuccess(successMessage) {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'system-message-wrapper';
+        this._displayTemporarySystemMessage(successMessage, 'success');
+    }
 
-        const bubble = document.createElement('div');
-        bubble.className = 'system-message-bubble success';
-        bubble.textContent = successMessage;
-
-        wrapper.appendChild(bubble);
-        this.container.appendChild(wrapper);
-        this.scrollToBottom();
-
-        setTimeout(() => {
-            wrapper.style.opacity = '0';
-            wrapper.addEventListener('transitionend', () => wrapper.remove());
-        }, UI_TIMEOUTS.ERROR_DISPLAY_MS);
+    /**
+     * یک پیام اطلاعاتی موقت در چت نمایش می‌دهد.
+     * @param {string} infoMessage - پیام اطلاعاتی برای نمایش.
+     */
+    displayTemporaryInfo(infoMessage) {
+        this._displayTemporarySystemMessage(infoMessage, 'info');
     }
     
     /**

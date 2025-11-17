@@ -100,10 +100,13 @@ class ChatUI {
 
     bindCoreEvents() {
         this.engineListeners = {
-            init: ({ settings, chats, activeChat }) => {
+            init: ({ settings, chats, activeChat, isDefaultProvider }) => {
                 if (!this.isSettingsValid(settings)) {
                     this.settingsModal.show(true);
+                } else if (isDefaultProvider) {
+                    this.messageRenderer.displayTemporaryInfo('شما در حال استفاده از مدل پیش‌فرض هستید. برای افزودن کلید شخصی به تنظیمات مراجعه کنید.');
                 }
+                
                 if (activeChat) {
                     this.sidebarManager.render(chats, activeChat.id);
                     this.updateChatView(activeChat);

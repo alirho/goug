@@ -16,12 +16,16 @@ import ChatEngine from './core/chatEngine.js';
 import * as IndexedDBStorage from './services/indexedDBStorage.js';
 import { streamGeminiResponse } from './core/providers/geminiProvider.js';
 
+// فرض کنید config از فایل config.json بارگذاری شده است
+const config = { defaultProvider: { /* ... */ } }; 
+
 const chatEngine = new ChatEngine({
     storage: IndexedDBStorage,
     providers: {
         gemini: streamGeminiResponse,
         // ... other providers
-    }
+    },
+    defaultProvider: config?.defaultProvider
 });
 ```
 
@@ -31,7 +35,7 @@ const chatEngine = new ChatEngine({
 
 | رویداد                 | داده ارسالی (`data`)                                  | توضیحات                                                                                                  |
 | ---------------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `init`                 | `{ settings, chats, activeChat }`                     | پس از بارگذاری اولیه تنظیمات و چت‌ها از حافظه، یک بار فراخوانی می‌شود.                                    |
+| `init`                 | `{ settings, chats, activeChat, isDefaultProvider }`  | پس از بارگذاری اولیه تنظیمات و چت‌ها از حافظه، یک بار فراخوانی می‌شود. `isDefaultProvider` نشان می‌دهد که آیا از پیکربندی پیش‌فرض استفاده می‌شود یا خیر. |
 | `settingsSaved`        | `settings: object`                                    | زمانی که تنظیمات جدید با موفقیت ذخیره می‌شوند، فراخوانی می‌شود.                                           |
 | `loading`              | `isLoading: boolean`                                  | هنگام شروع و پایان یک درخواست API، برای به‌روزرسانی وضعیت UI (مثلاً نمایش اسپینر) فراخوانی می‌شود.       |
 | `message`              | `message: object`                                     | هنگامی که یک پیام جدید (توسط کاربر یا دستیار) به چت فعال اضافه می‌شود، فراخوانی می‌شود.                  |

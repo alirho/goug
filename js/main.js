@@ -13,6 +13,24 @@ import { VersionError, StorageSupportError, StorageAccessError } from './utils/c
 import * as IndexedDBStorage from './services/indexedDBStorage.js';
 
 /**
+ * فایل پیکربندی `config.json` را به صورت اختیاری بارگذاری می‌کند.
+ * @returns {Promise<object|null>} یک Promise که با آبجکت پیکربندی یا null (در صورت عدم وجود یا خطا) resolve می‌شود.
+ */
+async function loadConfig() {
+    try {
+        const response = await fetch('config.json');
+        if (response.ok) {
+            return await response.json();
+        }
+        return null; // فایل وجود ندارد یا خطای سرور
+    } catch (error) {
+        // اگر fetch به دلیل عدم وجود فایل (404) یا دلایل دیگر با خطا مواجه شود، اشکالی ندارد.
+        console.warn('فایل config.json یافت نشد یا در بارگذاری آن خطایی رخ داد. برنامه با حالت عادی ادامه می‌دهد.');
+        return null;
+    }
+}
+
+/**
  * یک پیام خطای مهلک و دقیق به کاربر نمایش می‌دهد تا به او در تشخیص مشکل کمک کند.
  * @param {HTMLElement} rootElement - المانی که خطا در آن رندر می‌شود.
  * @param {Error} error - آبجکت خطا.
@@ -79,6 +97,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
+        const config = await loadConfig();
+
         // نمونه‌سازی از منطق اصلی با تزریق ذخیره‌سازی و ارائه‌دهندگان
         const chatEngine = new ChatEngine({
             storage: IndexedDBStorage,
@@ -86,7 +106,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 gemini: streamGeminiResponse,
                 openai: streamOpenAIResponse,
                 custom: streamCustomResponse,
-            }
+            },
+            defaultProvider: config?.defaultProvider
         });
         const chatUI = new ChatUI(chatEngine, rootElement);
 
