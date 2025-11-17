@@ -262,6 +262,17 @@ class ChatEngine extends EventEmitter {
     sendMessage(userInput, image = null) {
         return this.messageHandler.sendMessage(userInput, image);
     }
+
+    /**
+     * تمام منابع استفاده شده توسط موتور، از جمله شنوندگان و وظایف پس‌زمینه را پاک‌سازی می‌کند.
+     * @returns {void}
+     */
+    destroy() {
+        this.syncManager.destroy();
+        this.storageManager.destroy();
+        super.destroy(); // All event listeners are cleared
+        console.log('ChatEngine destroyed.');
+    }
 }
 
 export default ChatEngine;

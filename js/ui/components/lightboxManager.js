@@ -7,19 +7,36 @@ class LightboxManager {
             lightbox: document.getElementById('image-lightbox'),
             lightboxImage: document.getElementById('lightbox-image'),
         };
+
+        // --- Bound event handlers for easy removal ---
+        this.hideBound = this.hide.bind(this);
+        this.stopPropagationBound = (e) => e.stopPropagation();
+        this.handleKeyDownBound = (e) => {
+            if (e.key === 'Escape' && this.dom.lightbox && !this.dom.lightbox.classList.contains('hidden')) {
+                this.hide();
+            }
+        };
+
         this.bindEvents();
     }
 
     bindEvents() {
         if (!this.dom.lightbox) return;
 
-        this.dom.lightbox.addEventListener('click', () => this.hide());
-        this.dom.lightboxImage.addEventListener('click', (e) => e.stopPropagation());
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !this.dom.lightbox.classList.contains('hidden')) {
-                this.hide();
-            }
-        });
+        this.dom.lightbox.addEventListener('click', this.hideBound);
+        this.dom.lightboxImage.addEventListener('click', this.stopPropagationBound);
+        document.addEventListener('keydown', this.handleKeyDownBound);
+    }
+
+    /**
+     * Removes all event listeners to prevent memory leaks.
+     */
+    destroy() {
+        if (!this.dom.lightbox) return;
+
+        this.dom.lightbox.removeEventListener('click', this.hideBound);
+        this.dom.lightboxImage.removeEventListener('click', this.stopPropagationBound);
+        document.removeEventListener('keydown', this.handleKeyDownBound);
     }
 
     /**

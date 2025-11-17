@@ -25,6 +25,12 @@ class SidebarManager {
         
         this.confirmHandler = null;
 
+        // --- Bound event handlers for easy removal ---
+        this.handleGlobalClickBound = this._handleGlobalClick.bind(this);
+        this.handleMobileMenuClickBound = this._handleMobileMenuClick.bind(this);
+        this.hideConfirmationModalBound = this.hideConfirmationModal.bind(this);
+        this.handleConfirmBound = this._handleConfirm.bind(this);
+        
         this.bindGlobalEvents();
         this.bindConfirmationModalEvents();
     }
@@ -198,34 +204,45 @@ class SidebarManager {
         });
     }
 
+    _handleGlobalClick(e) {
+        // Close actions menu on outside click
+        if (this.activeMenu && !this.activeMenu.button.contains(e.target) && !this.activeMenu.element.contains(e.target)) {
+            this.closeActiveMenu();
+        }
+
+        // Close confirmation modal on overlay click
+        if (e.target === this.confirmationModal) {
+            this.hideConfirmationModal();
+        }
+    }
+
+    _handleMobileMenuClick(e) {
+        e.stopPropagation();
+        this.sidebar.classList.toggle('open');
+    }
+
+    _handleConfirm() {
+        if (this.confirmHandler) {
+            this.confirmHandler();
+        }
+        this.hideConfirmationModal();
+    }
+
     bindGlobalEvents() {
-        document.addEventListener('click', (e) => {
-            // Close actions menu on outside click
-            if (this.activeMenu && !this.activeMenu.button.contains(e.target) && !this.activeMenu.element.contains(e.target)) {
-                this.closeActiveMenu();
-            }
-
-            // Close confirmation modal on overlay click
-            if (e.target === this.confirmationModal) {
-                this.hideConfirmationModal();
-            }
-        });
-
-        // Mobile sidebar toggle
-        this.mobileMenuButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.sidebar.classList.toggle('open');
-        });
+        document.addEventListener('click', this.handleGlobalClickBound);
+        this.mobileMenuButton.addEventListener('click', this.handleMobileMenuClickBound);
     }
     
     bindConfirmationModalEvents() {
-        this.confirmationModalCancel.addEventListener('click', () => this.hideConfirmationModal());
-        this.confirmationModalConfirm.addEventListener('click', () => {
-            if (this.confirmHandler) {
-                this.confirmHandler();
-            }
-            this.hideConfirmationModal();
-        });
+        this.confirmationModalCancel.addEventListener('click', this.hideConfirmationModalBound);
+        this.confirmationModalConfirm.addEventListener('click', this.handleConfirmBound);
+    }
+
+    destroy() {
+        document.removeEventListener('click', this.handleGlobalClickBound);
+        this.mobileMenuButton.removeEventListener('click', this.handleMobileMenuClickBound);
+        this.confirmationModalCancel.removeEventListener('click', this.hideConfirmationModalBound);
+        this.confirmationModalConfirm.removeEventListener('click', this.handleConfirmBound);
     }
 
     showConfirmationModal({ title, bodyHtml, confirmText = 'تایید', confirmClass = 'btn-primary', onConfirm }) {

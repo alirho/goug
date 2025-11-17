@@ -19,6 +19,21 @@ class InputManager {
         this.isSubmitting = false;
 
         this.cacheDOMElements();
+
+        // --- Bound event handlers for easy removal ---
+        this.handleSubmitBound = (e) => {
+            e.preventDefault();
+            this.submit();
+        };
+        this.handleKeyDownBound = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.submit();
+            }
+        };
+        this.handleAttachClickBound = () => this.fileManager.trigger();
+        this.handleInputBound = () => this.autoResizeTextarea();
+
         this.bindEvents();
     }
 
@@ -33,30 +48,29 @@ class InputManager {
     }
 
     bindEvents() {
-        this.dom.chatForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.submit();
-        });
+        this.dom.chatForm.addEventListener('submit', this.handleSubmitBound);
+        this.dom.messageInput.addEventListener('keydown', this.handleKeyDownBound);
+        this.dom.attachFileButton.addEventListener('click', this.handleAttachClickBound);
+        this.dom.messageInput.addEventListener('input', this.handleInputBound);
+    }
 
-        this.dom.messageInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                this.submit();
-            }
-        });
-
-        this.dom.attachFileButton.addEventListener('click', () => this.fileManager.trigger());
-
-        this.dom.messageInput.addEventListener('input', () => {
-            this.autoResizeTextarea();
-        });
+    /**
+     * Removes all event listeners.
+     */
+    destroy() {
+        this.dom.chatForm.removeEventListener('submit', this.handleSubmitBound);
+        this.dom.messageInput.removeEventListener('keydown', this.handleKeyDownBound);
+        this.dom.attachFileButton.removeEventListener('click', this.handleAttachClickBound);
+        this.dom.messageInput.removeEventListener('input', this.handleInputBound);
     }
 
     /**
      * Handles the submission of the input form.
      */
     submit() {
-        if (this.isSubmitting) return;
+        if (this.isSubmitting) {
+            return;
+        }
 
         const userInput = this.dom.messageInput.value.trim();
         const image = this.attachedImage;

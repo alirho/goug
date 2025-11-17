@@ -107,6 +107,16 @@ class StorageManager {
 
         // If all chats are saved, the list will be empty and the interval will be cleared on the next run.
     }
+
+    /**
+     * هرگونه بازه زمانی در حال اجرا را برای جلوگیری از نشت حافظه پاک می‌کند.
+     */
+    destroy() {
+        if (this.unsavedRetryInterval) {
+            clearInterval(this.unsavedRetryInterval);
+            this.unsavedRetryInterval = null;
+        }
+    }
 }
 
 export default StorageManager;

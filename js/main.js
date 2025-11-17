@@ -37,6 +37,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Ensure the UI is fully initialized before the engine starts emitting events
         await chatUI.init();
         await chatEngine.init();
+
+        // Add cleanup logic for when the user leaves the page
+        window.addEventListener('beforeunload', () => {
+            if (chatUI) chatUI.destroy();
+            if (chatEngine) chatEngine.destroy();
+        });
+
     } catch (error) {
         console.error('Application failed to initialize:', error);
         rootElement.innerHTML = `<div style="padding: 2rem; text-align: center; color: #b91c1c;">

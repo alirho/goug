@@ -19,6 +19,20 @@ class EventEmitter {
     }
 
     /**
+     * Unsubscribes a listener function from an event.
+     * @param {string} eventName - The name of the event.
+     * @param {Function} listenerToRemove - The specific callback function to remove.
+     */
+    off(eventName, listenerToRemove) {
+        if (!this.events[eventName]) {
+            return;
+        }
+        this.events[eventName] = this.events[eventName].filter(
+            listener => listener !== listenerToRemove
+        );
+    }
+
+    /**
      * Emits an event, calling all subscribed listeners with the provided data.
      * Errors in one listener will not prevent others from being called.
      * @param {string} eventName - The name of the event to emit.
@@ -34,6 +48,13 @@ class EventEmitter {
                 }
             });
         }
+    }
+
+    /**
+     * Removes all listeners for all events.
+     */
+    destroy() {
+        this.events = {};
     }
 }
 

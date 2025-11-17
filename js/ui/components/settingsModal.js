@@ -12,6 +12,15 @@ class SettingsModal {
     constructor(engine) {
         this.engine = engine;
         this.cacheDOMElements();
+
+        // --- Bound event handlers for easy removal ---
+        this.handleSaveBound = this.handleSave.bind(this);
+        this.hideBound = () => this.show(false);
+        this.showBound = () => this.show(true);
+        this.toggleGeminiBound = () => this.togglePasswordVisibility(this.geminiKeyInput, this.geminiKeyToggle);
+        this.toggleChatgptBound = () => this.togglePasswordVisibility(this.chatgptKeyInput, this.chatgptKeyToggle);
+        this.toggleCustomBound = () => this.togglePasswordVisibility(this.customKeyInput, this.customKeyToggle);
+        
         this.bindEvents();
     }
 
@@ -46,13 +55,26 @@ class SettingsModal {
      * Binds event listeners to the modal's interactive elements.
      */
     bindEvents() {
-        this.form.addEventListener('submit', this.handleSave.bind(this));
-        this.cancelButton.addEventListener('click', () => this.show(false));
-        this.editButton.addEventListener('click', () => this.show(true));
+        this.form.addEventListener('submit', this.handleSaveBound);
+        this.cancelButton.addEventListener('click', this.hideBound);
+        this.editButton.addEventListener('click', this.showBound);
         
-        this.geminiKeyToggle.addEventListener('click', () => this.togglePasswordVisibility(this.geminiKeyInput, this.geminiKeyToggle));
-        this.chatgptKeyToggle.addEventListener('click', () => this.togglePasswordVisibility(this.chatgptKeyInput, this.chatgptKeyToggle));
-        this.customKeyToggle.addEventListener('click', () => this.togglePasswordVisibility(this.customKeyInput, this.customKeyToggle));
+        this.geminiKeyToggle.addEventListener('click', this.toggleGeminiBound);
+        this.chatgptKeyToggle.addEventListener('click', this.toggleChatgptBound);
+        this.customKeyToggle.addEventListener('click', this.toggleCustomBound);
+    }
+
+    /**
+     * Removes all event listeners attached by this component.
+     */
+    destroy() {
+        this.form.removeEventListener('submit', this.handleSaveBound);
+        this.cancelButton.removeEventListener('click', this.hideBound);
+        this.editButton.removeEventListener('click', this.showBound);
+        
+        this.geminiKeyToggle.removeEventListener('click', this.toggleGeminiBound);
+        this.chatgptKeyToggle.removeEventListener('click', this.toggleChatgptBound);
+        this.customKeyToggle.removeEventListener('click', this.toggleCustomBound);
     }
 
     /**

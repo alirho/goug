@@ -37,6 +37,9 @@ class ChatUI {
             mainTitle: null,
             newChatButton: null
         };
+        
+        this.engineListeners = {};
+        this.handleNewChatClickBound = () => this.engine.startNewChat();
     }
 
     /**
@@ -96,64 +99,86 @@ class ChatUI {
     }
 
     bindCoreEvents() {
-        this.engine.on('init', ({ settings, chats, activeChat }) => {
-            if (!this.isSettingsValid(settings)) {
-                this.settingsModal.show(true);
-            }
-
-            // Add a guard to prevent crash on initialization
-            if (activeChat) {
-                this.sidebarManager.render(chats, activeChat.id);
+        this.engineListeners = {
+            init: ({ settings, chats, activeChat }) => {
+                if (!this.isSettingsValid(settings)) {
+                    this.settingsModal.show(true);
+                }
+                if (activeChat) {
+                    this.sidebarManager.render(chats, activeChat.id);
+                    this.updateChatView(activeChat);
+                } else {
+                    console.warn('Initial active chat was not available. Rendering empty state.');
+                    this.sidebarManager.render(chats, null);
+                    this.messageRenderer.showWelcomeMessage();
+                }
+            },
+            chatListUpdated: ({ chats, activeChatId }) => {
+                this.sidebarManager.render(chats, activeChatId);
+            },
+            activeChatSwitched: (activeChat) => {
                 this.updateChatView(activeChat);
-            } else {
-                // This case can happen on first load if something went wrong creating the initial chat.
-                // We'll render an empty state.
-                console.warn('Initial active chat was not available. Rendering empty state.');
-                this.sidebarManager.render(chats, null);
-                this.messageRenderer.showWelcomeMessage();
-            }
-        });
+            },
+            message: (message) => {
+                if (message.role === 'model' && message.content === '') {
+                    this.currentStreamingBubble = this.messageRenderer.appendMessage(message, true);
+                } else {
+                    this.messageRenderer.appendMessage(message);
+                }
+            },
+            chunk: (chunk) => {
+                if (this.currentStreamingBubble) this.messageRenderer.appendChunk(this.currentStreamingBubble, chunk);
+            },
+            streamEnd: () => {
+                this.currentStreamingBubble = null;
+                this.inputManager.updateSendButtonState(false);
+            },
+            loading: (isLoading) => this.inputManager.updateSendButtonState(isLoading),
+            settingsSaved: () => {
+                this.settingsModal.show(false);
+                alert('تنظیمات با موفقیت ذخیره شد.');
+            },
+            error: (errorMessage) => this.messageRenderer.displayTemporaryError(errorMessage),
+            success: (successMessage) => this.messageRenderer.displayTemporarySuccess(successMessage),
+            messageRemoved: () => this.messageRenderer.removeLastMessage(),
+        };
 
-        this.engine.on('chatListUpdated', ({ chats, activeChatId }) => {
-            this.sidebarManager.render(chats, activeChatId);
+        Object.keys(this.engineListeners).forEach(eventName => {
+            this.engine.on(eventName, this.engineListeners[eventName]);
         });
-
-        this.engine.on('activeChatSwitched', (activeChat) => {
-            this.updateChatView(activeChat);
-        });
-        
-        this.engine.on('message', (message) => {
-            if (message.role === 'model' && message.content === '') {
-                this.currentStreamingBubble = this.messageRenderer.appendMessage(message, true);
-            } else {
-                this.messageRenderer.appendMessage(message);
-            }
-        });
-        
-        this.engine.on('chunk', (chunk) => {
-            if (this.currentStreamingBubble) this.messageRenderer.appendChunk(this.currentStreamingBubble, chunk);
-        });
-        
-        this.engine.on('streamEnd', () => {
-            this.currentStreamingBubble = null;
-            this.inputManager.updateSendButtonState(false);
-        });
-
-        this.engine.on('loading', (isLoading) => this.inputManager.updateSendButtonState(isLoading));
-        
-        this.engine.on('settingsSaved', () => {
-            this.settingsModal.show(false);
-            alert('تنظیمات با موفقیت ذخیره شد.');
-        });
-        
-        this.engine.on('error', (errorMessage) => this.messageRenderer.displayTemporaryError(errorMessage));
-        this.engine.on('success', (successMessage) => this.messageRenderer.displayTemporarySuccess(successMessage));
-
-        this.engine.on('messageRemoved', () => this.messageRenderer.removeLastMessage());
     }
 
     bindUIEvents() {
-        this.dom.newChatButton.addEventListener('click', () => this.engine.startNewChat());
+        this.dom.newChatButton.addEventListener('click', this.handleNewChatClickBound);
+    }
+
+    /**
+     * تمام کامپوننت‌های UI و شنوندگان رویداد را برای جلوگیری از نشت حافظه پاک‌سازی می‌کند.
+     */
+    destroy() {
+        // 1. Remove engine listeners
+        Object.keys(this.engineListeners).forEach(eventName => {
+            this.engine.off(eventName, this.engineListeners[eventName]);
+        });
+        this.engineListeners = {};
+
+        // 2. Remove UI event listeners
+        if(this.dom.newChatButton) {
+            this.dom.newChatButton.removeEventListener('click', this.handleNewChatClickBound);
+        }
+
+        // 3. Destroy all child components
+        if (this.lightboxManager) this.lightboxManager.destroy();
+        if (this.settingsModal) this.settingsModal.destroy();
+        if (this.sidebarManager) this.sidebarManager.destroy();
+        if (this.inputManager) this.inputManager.destroy();
+        if (this.fileManager) this.fileManager.destroy();
+
+        // 4. Clear root element and DOM references
+        this.rootElement.innerHTML = '';
+        this.dom = {};
+        
+        console.log('ChatUI destroyed.');
     }
 
     /**
@@ -162,7 +187,9 @@ class ChatUI {
      * @param {ImageData | null} image - The attached image data, if any.
      */
     handleSendMessage(userInput, image) {
-        if (this.engine.isLoading) return;
+        if (this.engine.isLoading) {
+            return;
+        }
 
         if (userInput || image) {
             this.engine.sendMessage(userInput, image);

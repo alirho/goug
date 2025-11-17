@@ -71,6 +71,17 @@ class SyncManager {
             this.engine.emit('error', error.message || 'خطا در همگام‌سازی با تب‌های دیگر.');
         }
     }
+
+    /**
+     * کانال پخش را برای آزاد کردن منابع می‌بندد.
+     */
+    destroy() {
+        if (this.syncChannel) {
+            this.syncChannel.onmessage = null;
+            this.syncChannel.close();
+            this.syncChannel = null;
+        }
+    }
 }
 
 export default SyncManager;

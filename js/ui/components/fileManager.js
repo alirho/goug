@@ -14,18 +14,24 @@ class FileManager {
         this.engine = engine;
         this.onFileProcessed = onFileProcessed;
         this.fileInput = document.getElementById('file-input');
+        
+        this.handleFileSelectBound = (e) => this.handleFileSelect(e);
         this.bindEvents();
     }
     
     bindEvents() {
-        this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+        if (this.fileInput) {
+            this.fileInput.addEventListener('change', this.handleFileSelectBound);
+        }
     }
     
     /**
      * Programmatically triggers the file input dialog.
      */
     trigger() {
-        this.fileInput.click();
+        if (this.fileInput) {
+            this.fileInput.click();
+        }
     }
 
     /**
@@ -157,6 +163,15 @@ class FileManager {
         };
 
         img.src = dataUrl;
+    }
+
+    /**
+     * شنوندگان رویداد را حذف می‌کند.
+     */
+    destroy() {
+        if (this.fileInput) {
+            this.fileInput.removeEventListener('change', this.handleFileSelectBound);
+        }
     }
 }
 
