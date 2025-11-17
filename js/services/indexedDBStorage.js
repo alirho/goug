@@ -3,6 +3,14 @@
 /** @typedef {import('../types.js').Chat} Chat */
 /** @typedef {import('../types.js').Settings} Settings */
 
+import {
+    VersionError,
+    StorageSupportError,
+    StorageAccessError,
+    QuotaExceededError,
+    GenericStorageError,
+} from '../utils/customErrors.js';
+
 const DB_NAME = 'GougDB';
 const DB_VERSION = 1;
 const CHATS_STORE_NAME = 'chats';
@@ -23,7 +31,7 @@ function initDB() {
 
     dbPromise = new Promise((resolve, reject) => {
         if (!window.indexedDB) {
-            return reject(new Error("مرورگر شما از IndexedDB پشتیبانی نمی‌کند. امکان ذخیره تاریخچه وجود ندارد."));
+            return reject(new StorageSupportError());
         }
 
         const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -46,9 +54,9 @@ function initDB() {
         request.onerror = (event) => {
             console.error("خطای پایگاه داده:", event.target.error);
             if (event.target.error.name === 'VersionError') {
-                 reject(new Error("نسخه جدیدی از برنامه در تب دیگری باز است. لطفاً تمام تب‌ها را بسته و دوباره امتحان کنید."));
+                 reject(new VersionError());
             } else {
-                 reject(new Error("امکان دسترسی به فضای ذخیره‌سازی مرورگر وجود ندارد."));
+                 reject(new StorageAccessError());
             }
         };
 
@@ -70,10 +78,10 @@ function initDB() {
  */
 function handleTransactionError(error) {
     if (error.name === 'QuotaExceededError') {
-        throw new Error("فضای ذخیره‌سازی مرورگر پر است. لطفاً گپ‌های قدیمی را حذف کنید.");
+        throw new QuotaExceededError();
     } else {
         console.error("خطای ذخیره‌سازی:", error);
-        throw new Error("خطایی در ذخیره‌سازی داده‌ها رخ داد.");
+        throw new GenericStorageError();
     }
 }
 
@@ -182,7 +190,7 @@ export async function loadAllChats() {
             request.onsuccess = () => resolve(request.result || []);
             request.onerror = (event) => {
                 console.error("Failed to load chats:", event.target.error);
-                reject(new Error("خطا در خواندن تاریخچه گفتگوها."));
+                reject(new GenericStorageError("خطا در خواندن تاریخچه گفتگوها."));
             };
         });
     } catch (e) {
@@ -226,7 +234,7 @@ export async function loadSettings() {
             request.onsuccess = () => resolve(request.result || null);
             request.onerror = (event) => {
                 console.error("Failed to load settings:", event.target.error);
-                reject(new Error("خطا در خواندن تنظیمات."));
+                reject(new GenericStorageError("خطا در خواندن تنظیمات."));
             };
         });
     } catch (e) {

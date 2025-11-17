@@ -79,3 +79,57 @@ html.dark .system-message-bubble.success {
     color: #bbf7d0;
     border-color: #2c4b37;
 }
+
+/* ==================== Fatal Error Display ==================== */
+.fatal-error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    margin: 1rem;
+    max-width: 36rem;
+    border-radius: 0.75rem;
+    background-color: var(--surface-light);
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow);
+}
+
+html.dark .fatal-error-container {
+    background-color: var(--surface-dark);
+    border-color: var(--border-dark);
+}
+
+.fatal-error-icon .material-symbols-outlined {
+    font-size: 3rem;
+    color: #ef4444; /* danger color */
+    margin-bottom: 1rem;
+}
+
+.fatal-error-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--text-light);
+}
+
+html.dark .fatal-error-title {
+    color: var(--text-dark);
+}
+
+.fatal-error-message {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-secondary-light);
+    margin-bottom: 2rem;
+}
+
+html.dark .fatal-error-message {
+    color: var(--text-secondary-dark);
+}
+
+.fatal-error-actions {
+    display: flex;
+    justify-content: center;
+}

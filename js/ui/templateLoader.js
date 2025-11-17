@@ -1,3 +1,5 @@
+import { TemplateLoadError } from '../utils/customErrors.js';
+
 /**
  * Loads an HTML template from a given path.
  * @param {string} path The path to the HTML template file.
@@ -13,7 +15,7 @@ export async function loadTemplate(path) {
         return await response.text();
     } catch (error) {
         console.error(`Failed to load template from ${path}:`, error);
-        throw new Error(`Could not load template: ${path}`);
+        throw new TemplateLoadError(path);
     }
 }
 

@@ -1,4 +1,5 @@
 import { ApiError } from '../utils/apiErrors.js';
+import { NetworkError } from '../utils/customErrors.js';
 import { API_CONFIG } from '../utils/constants.js';
 
 /**
@@ -50,7 +51,7 @@ export async function fetchStreamWithRetries(url, options, processLine, getError
             }
             if (error instanceof ApiError) throw error; // Re-throw un-retryable ApiError
             
-            lastError = new Error("اتصال به اینترنت برقرار نیست.");
+            lastError = new NetworkError();
         }
         
         // Wait before retrying
