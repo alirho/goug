@@ -69,6 +69,7 @@ chatEngine.on('activeChatSwitched', (activeChat) => {
 | `switchActiveChat(chatId)`| `chatId: string`        | چت مشخص شده را به عنوان چت فعال تنظیم می‌کند.                         |
 | `renameChat(chatId, newTitle)` | `chatId: string, newTitle: string` | عنوان یک چت مشخص را تغییر می‌دهد.                                     |
 | `deleteChat(chatId)`     | `chatId: string`         | یک چت مشخص را از لیست حذف می‌کند.                                      |
+| `destroy()`              | -                        | تمام منابع موتور (شنوندگان رویداد، تایمرها) را برای جلوگیری از نشت حافظه پاک‌سازی می‌کند. |
 
 
 **مثال استفاده:**
@@ -156,3 +157,62 @@ const chatEngine = new ChatEngine({ storage: MyCustomStorage });
 
 -   **محافظت از کلید API**: این یک برنامه کاملاً سمت کاربر (Client-Side) است. **کلیدهای API در `IndexedDB` ذخیره می‌شوند که اگرچه از `localStorage` امن‌تر است، اما همچنان در دسترس کاربر در مرورگر قرار دارد.** برای یک محیط پروداکشن واقعی، شما باید یک سرور واسط (Backend Proxy) ایجاد کنید که کلیدهای API را به صورت امن نگهداری کند. قابلیت **"فقط برای این نشست"** یک لایه امنیتی اضافه برای کاربران فراهم می‌کند.
 -   **جلوگیری از XSS**: کتابخانه `markdown-it` برای رندر محتوای Markdown استفاده می‌شود. تنظیمات فعلی `html: false` است که از تزریق HTML توسط مدل جلوگیری می‌کند.
+
+## بخش 5: چرخه حیات و بهترین شیوه‌ها برای پاک‌سازی (Lifecycle & Cleanup Best Practices)
+
+برای اطمینان از اینکه برنامه منابع را به درستی مدیریت کرده و دچار نشت حافظه نمی‌شود، تمام کلاس‌های اصلی (چه در لایه Core و چه در لایه UI) از یک الگوی چرخه حیات پیروی می‌کنند.
+
+### الگوی `init()` و `destroy()`
+
+-   **`constructor()`**: در سازنده، فقط وابستگی‌ها را تزریق کرده و وضعیت اولیه را تنظیم کنید. از انجام عملیات‌های سنگین یا دستکاری DOM در این مرحله خودداری کنید.
+-   **`init()`**: این متد (معمولاً `async`) باید برای تمام عملیات‌های راه‌اندازی استفاده شود. این شامل موارد زیر است:
+    -   کش کردن المان‌های DOM.
+    -   اتصال شنوندگان رویداد (Event Listeners).
+    -   بارگذاری داده‌های اولیه.
+-   **`destroy()`**: این متد باید **معکوس** `init` باشد. مسئولیت اصلی آن پاک‌سازی تمام منابعی است که کامپوننت ایجاد کرده است. **این مرحله برای جلوگیری از نشت حافظه حیاتی است.**
+    -   **حذف تمام شنوندگان رویداد**: هر `addEventListener` باید یک `removeEventListener` متناظر در `destroy` داشته باشد.
+    -   پاک کردن تایمرها: تمام `setInterval` یا `setTimeout` های فعال باید با `clearInterval` یا `clearTimeout` پاک شوند.
+    -   آزاد کردن منابع دیگر: هر منبع دیگری مانند `BroadcastChannel` باید بسته (`close`) شود.
+
+### مثال عملی: مدیریت شنوندگان رویداد
+
+یک اشتباه رایج که منجر به نشت حافظه می‌شود، عدم توانایی در حذف شنوندگان رویداد است. برای اینکه بتوانید یک listener را حذف کنید، باید یک ارجاع (reference) به همان تابع داشته باشید.
+
+**روش اشتباه (حافظه نشت می‌کند):**
+```javascript
+// در init()
+this.button.addEventListener('click', () => this.doSomething());
+
+// در destroy()
+// ؟؟؟ چگونه این تابع بی‌نام را حذف کنیم؟ نمی‌توانیم!
+this.button.removeEventListener('click', () => this.doSomething()); // این کار نمی‌کند!
+```
+
+**روش صحیح (استفاده از توابع `bind` شده):**
+
+```javascript
+class MyComponent {
+    constructor() {
+        this.button = document.getElementById('my-button');
+        // 1. یک نسخه bind شده از handler را در constructor ایجاد کنید.
+        this.handleClickBound = this.handleClick.bind(this);
+    }
+
+    init() {
+        // 2. از نسخه bind شده برای اضافه کردن listener استفاده کنید.
+        this.button.addEventListener('click', this.handleClickBound);
+    }
+
+    destroy() {
+        // 3. از همان نسخه برای حذف listener استفاده کنید.
+        this.button.removeEventListener('click', this.handleClickBound);
+        console.log('MyComponent destroyed and listeners cleaned up.');
+    }
+
+    handleClick() {
+        console.log('Button was clicked!');
+    }
+}
+```
+
+پیروی از این الگو در سراسر پروژه تضمین می‌کند که برنامه پایدار باقی مانده و منابع سیستم را به طور مؤثر مدیریت می‌کند.
