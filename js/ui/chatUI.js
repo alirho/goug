@@ -281,7 +281,7 @@ class ChatUI {
         availableModels.forEach(modelConfig => {
             const item = document.createElement('div');
             item.className = 'model-selector-item';
-            // ذخیره پیکربندی کامل برای استفاده در هنگام به‌روزرسانی
+            // پیکربندی مرجع را برای استفاده در هنگام به‌روزرسانی ذخیره کن
             item.dataset.config = JSON.stringify(modelConfig);
             
             let isActive = false;
@@ -312,51 +312,65 @@ class ChatUI {
     }
 
     /**
-     * لیستی از تمام پیکربندی‌های مدل موجود را از تنظیمات استخراج می‌کند.
+     * لیستی از تمام پیکربندی‌های مدل موجود را از تنظیمات کاربر و پیکربندی پیش‌فرض استخراج می‌کند.
      * @returns {Array<ProviderConfig>}
      */
     _getAllAvailableModels() {
         const models = [];
         const settings = this.engine.settings;
-        
-        if (!settings || !settings.providers) return models;
-
-        // Gemini
-        const geminiConfig = settings.providers.gemini;
-        if (geminiConfig && geminiConfig.apiKey && geminiConfig.modelName) {
-            models.push({
-                provider: 'gemini',
-                name: 'Gemini',
-                modelName: geminiConfig.modelName,
-                apiKey: geminiConfig.apiKey
-            });
-        }
-        
-        // OpenAI
-        const openaiConfig = settings.providers.openai;
-        if (openaiConfig && openaiConfig.apiKey && openaiConfig.modelName) {
-            models.push({
-                provider: 'openai',
-                name: 'ChatGPT',
-                modelName: openaiConfig.modelName,
-                apiKey: openaiConfig.apiKey
-            });
-        }
-
-        // Custom
-        settings.providers.custom?.forEach(p => {
-            if (p.name && p.modelName && p.endpointUrl) {
+    
+        // ۱. مدل‌های پیکربندی شده توسط کاربر را اضافه کن
+        if (settings && settings.providers) {
+            // Gemini
+            const geminiConfig = settings.providers.gemini;
+            if (geminiConfig && geminiConfig.apiKey && geminiConfig.modelName) {
                 models.push({
-                    provider: 'custom',
-                    name: p.name,
-                    modelName: p.modelName,
-                    apiKey: p.apiKey,
-                    endpointUrl: p.endpointUrl,
-                    customProviderId: p.id
+                    provider: 'gemini',
+                    name: 'Gemini',
+                    modelName: geminiConfig.modelName
                 });
             }
-        });
-        
+            // OpenAI
+            const openaiConfig = settings.providers.openai;
+            if (openaiConfig && openaiConfig.apiKey && openaiConfig.modelName) {
+                models.push({
+                    provider: 'openai',
+                    name: 'ChatGPT',
+                    modelName: openaiConfig.modelName
+                });
+            }
+            // Custom
+            settings.providers.custom?.forEach(p => {
+                if (p.name && p.modelName && p.endpointUrl) {
+                    models.push({
+                        provider: 'custom',
+                        name: p.name,
+                        modelName: p.modelName,
+                        customProviderId: p.id
+                    });
+                }
+            });
+        }
+    
+        // ۲. ارائه‌دهنده پیش‌فرض را اضافه کن، اگر وجود داشته باشد و تکراری نباشد
+        const defaultProvider = this.engine.defaultProvider;
+        if (defaultProvider && defaultProvider.modelName) {
+            const isDuplicate = models.some(m => 
+                m.provider === defaultProvider.provider &&
+                m.modelName === defaultProvider.modelName
+            );
+    
+            if (!isDuplicate) {
+                 models.push({
+                    provider: defaultProvider.provider,
+                    name: `${defaultProvider.name || 'مدل'} (پیش‌فرض)`,
+                    modelName: defaultProvider.modelName,
+                    // یک شناسه قراردادی برای شناسایی ارائه‌دهنده پیش‌فرض
+                    customProviderId: defaultProvider.provider === 'custom' ? 'default_provider' : undefined
+                });
+            }
+        }
+    
         return models;
     }
 

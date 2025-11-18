@@ -168,31 +168,20 @@ class ChatEngine extends EventEmitter {
     async init() {
         try {
             this.settings = await this.storage.loadSettings();
-            let isDefaultProvider = false;
-
+    
+            // ساختار تنظیمات خالی برای اطمینان از وجود تمام کلیدها
             const emptySettings = { activeProviderId: null, providers: { gemini: {}, openai: {}, custom: [] } };
-            
-            // اگر تنظیمات ذخیره‌شده توسط کاربر وجود نداشته باشد یا خالی باشد
+    
+            // اگر تنظیمات ذخیره‌شده توسط کاربر وجود نداشته باشد، با یک ساختار خالی شروع کن.
+            // **مهم**: ارائه‌دهنده پیش‌فرض را در تنظیمات کاربر تزریق نکن.
             if (!this.settings) {
                 this.settings = emptySettings;
-                if (this.defaultProvider) {
-                    // ارائه‌دهنده پیش‌فرض را به عنوان تنظیمات اولیه اعمال کن
-                    const { provider, ...config } = this.defaultProvider;
-                    if (provider === 'custom') {
-                        this.settings.providers.custom.push({ id: `default_${Date.now()}`, ...config });
-                        this.settings.activeProviderId = this.settings.providers.custom[0].id;
-                    } else if (provider === 'gemini' || provider === 'openai') {
-                        this.settings.providers[provider] = config;
-                        this.settings.activeProviderId = provider;
-                    }
-                    isDefaultProvider = this.isSettingsValid(this.settings);
-                }
             } else {
-                 // اطمینان از اینکه ساختار settings همیشه کامل است
+                // اطمینان از اینکه ساختار settings همیشه کامل است
                 this.settings = { ...emptySettings, ...this.settings };
                 this.settings.providers = { ...emptySettings.providers, ...this.settings.providers };
             }
-
+    
             let loadedChatList = await this.storage.loadChatList();
             
             // داده‌های قدیمی را به فرمت جدید مبتنی بر مرجع مهاجرت بده
@@ -226,7 +215,6 @@ class ChatEngine extends EventEmitter {
                 settings: this.settings,
                 chats: this.chats,
                 activeChat: activeChat,
-                isDefaultProvider: isDefaultProvider
             };
             this.emit('init', initPayload);
             
@@ -264,34 +252,52 @@ class ChatEngine extends EventEmitter {
     
     /**
      * پیکربندی کامل یک ارائه‌دهنده را بر اساس مرجع مدل (`modelInfo`) پیدا می‌کند.
-     * این متد مرکزی برای ترجمه مرجع به پیکربندی واقعی است.
+     * این متد ابتدا در تنظیمات کاربر و سپس در ارائه‌دهنده پیش‌فرض جستجو می‌کند.
      * @param {ChatModelInfo} modelInfo - مرجع مدل از یک آبجکت گپ.
      * @returns {ProviderConfig | null} پیکربندی کامل، یا null در صورت عدم وجود.
      */
     resolveProviderConfig(modelInfo) {
-        if (!modelInfo || !this.settings || !this.settings.providers) {
-            return null;
-        }
-
-        const { provider, customProviderId } = modelInfo;
-
-        if (provider === 'custom') {
-            // پیدا کردن پیکربندی سفارشی بر اساس شناسه منحصر به فرد آن
-            const config = this.settings.providers.custom?.find(p => p.id === customProviderId);
-            if (config) {
-                return { provider: 'custom', customProviderId: config.id, ...config };
-            }
-        } else if (provider === 'gemini' || provider === 'openai') {
-            const config = this.settings.providers[provider];
-            // بررسی اینکه آیا یک پیکربندی معتبر (با کلید API) برای این نوع وجود دارد یا خیر
-            if (config && config.apiKey && config.modelName) {
-                const name = provider === 'gemini' ? 'Gemini' : 'ChatGPT';
-                // مقایسه نام مدل برای اطمینان از اینکه همان مدل است
-                if (config.modelName === modelInfo.modelName) {
-                    return { provider, name, ...config };
+        if (!modelInfo) return null;
+    
+        // ۱. جستجو در تنظیمات ذخیره‌شده کاربر
+        if (this.settings && this.settings.providers) {
+            const { provider, customProviderId, modelName } = modelInfo;
+    
+            if (provider === 'custom') {
+                const config = this.settings.providers.custom?.find(p => p.id === customProviderId);
+                if (config) {
+                    return { provider: 'custom', customProviderId: config.id, ...config };
+                }
+            } else if (provider === 'gemini' || provider === 'openai') {
+                const config = this.settings.providers[provider];
+                if (config && config.apiKey && config.modelName && config.modelName === modelName) {
+                     const name = provider === 'gemini' ? 'Gemini' : 'ChatGPT';
+                     return { provider, name, ...config };
                 }
             }
         }
+    
+        // ۲. اگر در تنظیمات کاربر یافت نشد، به عنوان جایگزین در ارائه‌دهنده پیش‌فرض جستجو کن
+        if (this.defaultProvider) {
+            const { provider, modelName } = modelInfo;
+            const defaultConfig = this.defaultProvider;
+    
+            // بررسی اینکه آیا modelInfo با ارائه‌دهنده پیش‌فرض مطابقت دارد
+            if (defaultConfig.provider === provider && defaultConfig.modelName === modelName) {
+                 // برای اطمینان از معتبر بودن پیکربندی پیش‌فرض
+                const isCustomValid = defaultConfig.provider === 'custom' && defaultConfig.endpointUrl;
+                const isBuiltinValid = (defaultConfig.provider === 'gemini' || defaultConfig.provider === 'openai') && defaultConfig.apiKey;
+    
+                if (isCustomValid || isBuiltinValid) {
+                    return {
+                        ...defaultConfig,
+                        // یک شناسه قراردادی برای ارجاع به ارائه‌دهنده پیش‌فرض سفارشی
+                        customProviderId: defaultConfig.provider === 'custom' ? 'default_provider' : undefined
+                    };
+                }
+            }
+        }
+    
         return null;
     }
 
