@@ -31,19 +31,9 @@ html.dark .logo {
 }
 
 .sidebar-logo {
-    width: 3rem;
-    height: 3rem;
+    width: 2rem;
+    height: 2rem;
 }
-
-.logo {
-    cursor: pointer;
-    transition: opacity 0.2s;
-}
-
-.logo:hover {
-    opacity: 0.8;
-}
-
 
 .sidebar-content {
     display: flex;
@@ -63,6 +53,7 @@ html.dark .logo {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 0.5rem;
     padding: 0.625rem 0.75rem;
     border-radius: 0.5rem;
     cursor: pointer;
@@ -84,6 +75,22 @@ html.dark .chat-list-item.active {
     background-color: var(--hover-dark);
     color: var(--text-dark);
 }
+
+.provider-icon {
+    font-size: 1rem !important;
+    flex-shrink: 0;
+    color: var(--text-muted-light);
+}
+html.dark .provider-icon {
+    color: var(--text-muted-dark);
+}
+.chat-list-item.active .provider-icon {
+    color: var(--color-primary);
+}
+html.dark .chat-list-item.active .provider-icon {
+    color: var(--text-dark);
+}
+
 .chat-title {
     flex-grow: 1;
     white-space: nowrap;
@@ -104,6 +111,7 @@ html.dark .chat-list-item.active {
     color: var(--text-muted-light);
     opacity: 0;
     transition: opacity 0.2s, background-color 0.2s;
+    flex-shrink: 0;
 }
 html.dark .actions-button {
     color: var(--text-muted-dark);

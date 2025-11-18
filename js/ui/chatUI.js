@@ -9,6 +9,7 @@ import LightboxManager from './components/lightboxManager.js';
 // وارد کردن تایپ‌ها برای JSDoc
 /** @typedef {import('../types.js').Settings} Settings */
 /** @typedef {import('../types.js').ImageData} ImageData */
+/** @typedef {import('../types.js').ProviderConfig} ProviderConfig */
 /** @typedef {import('../core/chatEngine.js').default} ChatEngine */
 
 /**
@@ -23,7 +24,6 @@ class ChatUI {
         this.engine = chatEngine;
         this.rootElement = rootElement;
         
-        // کامپوننت‌ها در init() راه‌اندازی خواهند شد
         this.messageRenderer = null;
         this.settingsModal = null;
         this.sidebarManager = null;
@@ -33,13 +33,11 @@ class ChatUI {
         
         this.currentStreamingBubble = null;
         
-        this.dom = {
-            mainTitle: null,
-            newChatButton: null
-        };
+        this.dom = {};
         
         this.engineListeners = {};
         this.handleNewChatClickBound = () => this.engine.startNewChat();
+        this.handleGlobalClickBound = this._handleGlobalClick.bind(this);
     }
 
     /**
@@ -68,8 +66,15 @@ class ChatUI {
     }
 
     cacheDOMElements() {
-        this.dom.mainTitle = document.getElementById('main-title');
-        this.dom.newChatButton = document.getElementById('new-chat-button');
+        this.dom = {
+            mainTitle: document.getElementById('main-title'),
+            newChatButton: document.getElementById('new-chat-button'),
+            modelSelector: document.getElementById('model-selector'),
+            modelSelectorButton: document.getElementById('model-selector-button'),
+            modelSelectorIcon: document.getElementById('model-selector-icon'),
+            modelSelectorName: document.getElementById('model-selector-name'),
+            modelSelectorDropdown: document.getElementById('model-selector-dropdown'),
+        };
     }
 
     initComponents() {
@@ -87,21 +92,19 @@ class ChatUI {
         });
     }
 
-    /**
-     * بررسی می‌کند که آیا تنظیمات API برای اجرای برنامه معتبر هستند.
-     * @param {Settings | null} settings - آبجکت تنظیمات از حافظه.
-     * @returns {boolean} اگر تنظیمات معتبر باشند true، در غیر این صورت false.
-     */
     isSettingsValid(settings) {
         if (!settings || !settings.provider) return false;
-        if (settings.provider === 'custom') return !!settings.endpointUrl;
+        if (settings.provider === 'custom') {
+            const activeCustom = settings.customProviders?.find(p => p.id === settings.customProviderId);
+            return !!activeCustom?.endpointUrl;
+        }
         return !!settings.apiKey;
     }
 
     bindCoreEvents() {
         this.engineListeners = {
             init: ({ settings, chats, activeChat, isDefaultProvider }) => {
-                if (!this.isSettingsValid(settings)) {
+                if (!this.isSettingsValid(settings) && !this.engine.defaultProvider) {
                     this.settingsModal.show(true);
                 } else if (isDefaultProvider) {
                     this.messageRenderer.displayTemporaryInfo('شما در حال استفاده از مدل پیش‌فرض هستید. برای افزودن کلید شخصی به تنظیمات مراجعه کنید.');
@@ -111,9 +114,9 @@ class ChatUI {
                     this.sidebarManager.render(chats, activeChat.id);
                     this.updateChatView(activeChat);
                 } else {
-                    console.warn('گپ فعال اولیه در دسترس نبود. رندر کردن حالت خالی.');
                     this.sidebarManager.render(chats, null);
                     this.messageRenderer.showWelcomeMessage();
+                    this.dom.modelSelector.classList.add('hidden');
                 }
             },
             chatListUpdated: ({ chats, activeChatId }) => {
@@ -140,6 +143,9 @@ class ChatUI {
             settingsSaved: () => {
                 this.settingsModal.show(false);
                 alert('تنظیمات با موفقیت ذخیره شد.');
+                // Refresh the active chat to apply the new default model if needed
+                const activeChat = this.engine.getActiveChat();
+                if (activeChat) this.updateChatView(activeChat);
             },
             error: (errorMessage) => this.messageRenderer.displayTemporaryError(errorMessage),
             success: (successMessage) => this.messageRenderer.displayTemporarySuccess(successMessage),
@@ -153,65 +159,163 @@ class ChatUI {
 
     bindUIEvents() {
         this.dom.newChatButton.addEventListener('click', this.handleNewChatClickBound);
+        this.dom.modelSelectorButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.dom.modelSelectorDropdown.classList.toggle('hidden');
+        });
+        this.dom.modelSelectorDropdown.addEventListener('click', (e) => {
+            const item = e.target.closest('.model-selector-item');
+            if (item) {
+                const config = JSON.parse(item.dataset.config);
+                const activeChat = this.engine.getActiveChat();
+                if (activeChat) {
+                    this.engine.updateChatModel(activeChat.id, config);
+                }
+                this.dom.modelSelectorDropdown.classList.add('hidden');
+            }
+        });
+        document.addEventListener('click', this.handleGlobalClickBound);
+    }
+    
+    _handleGlobalClick() {
+        if (this.dom.modelSelectorDropdown && !this.dom.modelSelectorDropdown.classList.contains('hidden')) {
+            this.dom.modelSelectorDropdown.classList.add('hidden');
+        }
     }
 
-    /**
-     * تمام کامپوننت‌های UI و شنوندگان رویداد را برای جلوگیری از نشت حافظه پاک‌سازی می‌کند.
-     */
     destroy() {
-        // ۱. حذف شنوندگان موتور
         Object.keys(this.engineListeners).forEach(eventName => {
             this.engine.off(eventName, this.engineListeners[eventName]);
         });
         this.engineListeners = {};
 
-        // ۲. حذف شنوندگان رویداد UI
-        if(this.dom.newChatButton) {
-            this.dom.newChatButton.removeEventListener('click', this.handleNewChatClickBound);
-        }
+        if (this.dom.newChatButton) this.dom.newChatButton.removeEventListener('click', this.handleNewChatClickBound);
+        document.removeEventListener('click', this.handleGlobalClickBound);
 
-        // ۳. نابود کردن تمام کامپوننت‌های فرزند
         if (this.lightboxManager) this.lightboxManager.destroy();
         if (this.settingsModal) this.settingsModal.destroy();
         if (this.sidebarManager) this.sidebarManager.destroy();
         if (this.inputManager) this.inputManager.destroy();
         if (this.fileManager) this.fileManager.destroy();
 
-        // ۴. پاک کردن المان اصلی و ارجاعات DOM
         this.rootElement.innerHTML = '';
         this.dom = {};
-        
         console.log('ChatUI نابود شد.');
     }
 
-    /**
-     * منطق ارسال پیام را مدیریت می‌کند که توسط InputManager فراخوانی می‌شود.
-     * @param {string} userInput - متن از فیلد ورودی.
-     * @param {ImageData | null} image - داده‌های تصویر پیوست شده، در صورت وجود.
-     */
     handleSendMessage(userInput, image) {
-        if (this.engine.isLoading) {
-            return;
-        }
-
+        if (this.engine.isLoading) return;
         if (userInput || image) {
             this.engine.sendMessage(userInput, image);
             this.inputManager.reset();
         }
     }
 
-    /**
-     * نمای اصلی چت را با محتوای یک گپ داده شده به‌روز می‌کند.
-     * @param {import('../types.js').Chat} chat - آبجکت گپی که باید نمایش داده شود.
-     */
     updateChatView(chat) {
         if (!chat) return;
         this.inputManager.clearPreview();
         this.dom.mainTitle.textContent = chat.title;
+        this.renderModelSelector(chat);
         if (chat.messages && chat.messages.length > 0) {
             this.messageRenderer.renderHistory(chat.messages);
         } else {
             this.messageRenderer.showWelcomeMessage();
+        }
+    }
+
+    // --- توابع انتخاب مدل ---
+
+    /**
+     * دکمه و منوی کشویی انتخاب مدل را بر اساس گپ فعال رندر می‌کند.
+     * @param {import('../types.js').Chat} chat 
+     */
+    renderModelSelector(chat) {
+        if (!chat || !chat.providerConfig) {
+            this.dom.modelSelector.classList.add('hidden');
+            return;
+        }
+
+        const config = chat.providerConfig;
+        const displayName = config.name || (config.provider === 'gemini' ? 'Gemini' : config.provider === 'openai' ? 'ChatGPT' : 'سفارشی');
+        
+        this.dom.modelSelectorName.textContent = `${displayName}: ${config.modelName}`;
+        this.dom.modelSelectorIcon.textContent = this._getProviderIconName(config.provider);
+        
+        this._populateModelDropdown();
+        this.dom.modelSelector.classList.remove('hidden');
+    }
+
+    /**
+     * منوی کشویی مدل را با تمام ارائه‌دهندگان موجود پر می‌کند.
+     */
+    _populateModelDropdown() {
+        const dropdown = this.dom.modelSelectorDropdown;
+        dropdown.innerHTML = '';
+        const availableModels = this._getAllAvailableModels();
+
+        availableModels.forEach(modelConfig => {
+            const item = document.createElement('div');
+            item.className = 'model-selector-item';
+            item.dataset.config = JSON.stringify(modelConfig);
+            
+            const displayName = modelConfig.name || (modelConfig.provider === 'gemini' ? 'Gemini' : modelConfig.provider === 'openai' ? 'ChatGPT' : 'سفارشی');
+
+            item.innerHTML = `
+                <span class="material-symbols-outlined provider-icon">${this._getProviderIconName(modelConfig.provider)}</span>
+                <span class="model-item-name">${displayName}: ${modelConfig.modelName}</span>
+            `;
+            dropdown.appendChild(item);
+        });
+    }
+
+    /**
+     * لیستی از تمام پیکربندی‌های مدل موجود را از تنظیمات استخراج می‌کند.
+     * @returns {Array<ProviderConfig>}
+     */
+    _getAllAvailableModels() {
+        const models = [];
+        const settings = this.engine.settings;
+        if (!settings) return [];
+        
+        // افزودن ارائه‌دهنده فعال (اگر سفارشی نباشد)
+        if (settings.provider && settings.provider !== 'custom' && settings.apiKey) {
+            models.push({
+                provider: settings.provider,
+                name: settings.provider === 'gemini' ? 'Gemini' : 'ChatGPT',
+                modelName: settings.modelName,
+                apiKey: settings.apiKey,
+            });
+        }
+        
+        // افزودن تمام ارائه‌دهندگان سفارشی معتبر
+        if (settings.customProviders) {
+            settings.customProviders.forEach(p => {
+                if (p.name && p.modelName && p.endpointUrl) {
+                    models.push({
+                        provider: 'custom',
+                        name: p.name,
+                        modelName: p.modelName,
+                        apiKey: p.apiKey,
+                        endpointUrl: p.endpointUrl,
+                        customProviderId: p.id,
+                    });
+                }
+            });
+        }
+        
+        return models;
+    }
+
+    /**
+     * نام آیکون Material Symbols را برای یک ارائه‌دهنده برمی‌گرداند.
+     * @param {string} provider 
+     * @returns {string}
+     */
+    _getProviderIconName(provider) {
+        switch (provider) {
+            case 'gemini': return 'auto_awesome';
+            case 'openai': return 'psychology';
+            default: return 'hub';
         }
     }
 }

@@ -25,8 +25,17 @@
  * @property {Array<Message>} [messages] - آرایه‌ای از پیام‌های داخل گپ (می‌تواند برای بارگذاری درخواستی وجود نداشته باشد)
  * @property {number} createdAt - مهر زمانی ایجاد گپ
  * @property {number} updatedAt - مهر زمانی آخرین به‌روزرسانی گپ
- * @property {string} provider - نام ارائه‌دهنده استفاده شده در گپ
- * @property {string} modelName - نام مدل استفاده شده در گپ
+ * @property {ProviderConfig} providerConfig - پیکربندی ارائه‌دهنده برای این گپ
+ */
+
+/**
+ * @typedef {object} ProviderConfig
+ * @property {'gemini' | 'openai' | 'custom'} provider - نوع ارائه‌دهنده
+ * @property {string} modelName - نام مدل
+ * @property {string} apiKey - کلید API
+ * @property {string} [name] - نام نمایشی، به ویژه برای ارائه‌دهندگان سفارشی
+ * @property {string} [endpointUrl] - آدرس نقطه پایانی برای ارائه‌دهنده سفارشی
+ * @property {string} [customProviderId] - شناسه ارائه‌دهنده سفارشی
  */
 
 /**
@@ -48,6 +57,7 @@
  * @property {Array<CustomProviderConfig>} [customProviders] - لیست تمام پیکربندی‌های ارائه‌دهنده سفارشی
  */
 
+
 /**
  * @typedef {object} StorageAdapter
  * @property {function(): Promise<Settings|null>} loadSettings - بارگذاری تنظیمات کاربر
@@ -60,7 +70,7 @@
 
 /**
  * @callback ProviderHandler
- * @param {Settings} settings - تنظیمات کاربر برای این ارائه‌دهنده
+ * @param {ProviderConfig} providerConfig - تنظیمات خاص ارائه‌دهنده برای این درخواست
  * @param {Array<Message>} history - تاریخچه پیام‌ها برای ارسال به API
  * @param {(chunk: string) => void} onChunk - تابعی که برای هر قطعه از پاسخ استریم فراخوانی می‌شود
  * @param {AbortSignal} [signal] - یک سیگنال اختیاری برای لغو درخواست

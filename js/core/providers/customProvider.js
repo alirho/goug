@@ -9,13 +9,13 @@ import { buildOpenAIRequestBody, getOpenAIErrorMessage, processOpenAIStream } fr
  * پاسخ‌های استریم را از یک API سفارشی سازگار با OpenAI مدیریت می‌کند.
  * @type {ProviderHandler}
  */
-export async function streamCustomResponse(settings, history, onChunk, signal) {
-    const API_URL = settings.endpointUrl;
+export async function streamCustomResponse(providerConfig, history, onChunk, signal) {
+    const API_URL = providerConfig.endpointUrl;
 
     const requestBody = buildOpenAIRequestBody(history);
     const finalBody = {
         ...requestBody,
-        model: settings.modelName,
+        model: providerConfig.modelName,
         stream: true,
     };
 
@@ -23,7 +23,7 @@ export async function streamCustomResponse(settings, history, onChunk, signal) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${settings.apiKey}`,
+            'Authorization': `Bearer ${providerConfig.apiKey}`,
         },
         body: JSON.stringify(finalBody),
         signal,

@@ -1,5 +1,6 @@
 // وارد کردن تایپ‌ها برای JSDoc
 /** @typedef {import('../../types.js').ImageData} ImageData */
+/** @typedef {import('../../types.js').ProviderConfig} ProviderConfig */
 /** @typedef {import('../chatEngine.js').default} ChatEngine */
 
 /**
@@ -35,6 +36,26 @@ class MessageHandler {
             this.abortController = null;
         }
     }
+    
+    /**
+     * بررسی می‌کند که آیا پیکربندی مدل یک گپ هنوز در تنظیمات سراسری معتبر است یا خیر.
+     * @param {ProviderConfig} config - پیکربندی برای اعتبارسنجی.
+     * @returns {boolean}
+     */
+    _isProviderConfigValid(config) {
+        const settings = this.engine.settings;
+        if (!config || !settings) return false;
+
+        // برای مدل‌های سفارشی، بررسی می‌کنیم که آیا شناسه آن هنوز در لیست وجود دارد یا خیر.
+        if (config.provider === 'custom') {
+            return settings.customProviders?.some(p => p.id === config.customProviderId);
+        }
+        // برای Gemini و OpenAI، نمی‌توانیم با اطمینان بگوییم کلید حذف شده است،
+        // اما می‌توانیم بررسی کنیم که آیا این نوع ارائه‌دهنده در تنظیمات فعال فعلی وجود دارد یا خیر.
+        // اگر کاربر ارائه‌دهنده فعال را تغییر داده باشد، این کار حداقل جلوی برخی خطاها را می‌گیرد.
+        // خطای نهایی در هنگام فراخوانی API مشخص خواهد شد که بازخورد مناسبی است.
+        return true;
+    }
 
     /**
      * یک پیام جدید از کاربر دریافت کرده، به تاریخچه اضافه می‌کند و برای دریافت پاسخ به ارائه‌دهنده ارسال می‌کند.
@@ -43,27 +64,43 @@ class MessageHandler {
      * @returns {Promise<void>}
      */
     async sendMessage(userInput, image = null) {
-        // لغو هر درخواست قبلی قبل از شروع یک درخواست جدید.
         this.cancelCurrentStream();
-
-        // ایجاد یک کنترلر جدید برای درخواست فعلی.
         const currentController = new AbortController();
         this.abortController = currentController;
         
-        if (this.engine.isLoading || !this.engine.activeChatId) {
-            return;
-        }
+        if (this.engine.isLoading || !this.engine.activeChatId) return;
 
         const { maxMessageLength, maxMessagesPerChat } = this.engine.limits;
 
-        // --- اعتبارسنجی ارائه‌دهنده و تنظیمات ---
-        if (!this.engine.settings || !this.engine.settings.provider || (!this.engine.settings.apiKey && this.engine.settings.provider !== 'custom')) {
-            this.engine.emit('error', 'تنظیمات API صحیح نیست. لطفاً تنظیمات را بررسی کنید.');
+        let activeChat = this.engine.getActiveChat();
+        if (!activeChat || !activeChat.messages) {
+            this.engine.emit('error', 'گپ فعال برای ارسال پیام در دسترس نیست.');
             return;
         }
-        const providerStreamer = this.engine.providers.get(this.engine.settings.provider);
+
+        let providerConfig = activeChat.providerConfig;
+
+        // --- اعتبارسنجی و بازیابی پیکربندی مدل ---
+        if (!this._isProviderConfigValid(providerConfig)) {
+            const oldModelName = providerConfig?.name || providerConfig?.modelName || 'مدل قبلی';
+            const defaultConfig = this.engine.chatManager._getDefaultProviderConfig();
+            
+            if (!defaultConfig) {
+                this.engine.emit('error', 'مدل فعلی گپ دیگر موجود نیست و هیچ مدل پیش‌فرض معتبری یافت نشد. لطفاً تنظیمات را بررسی کنید.');
+                return;
+            }
+            
+            this.engine.emit('error', `مدل «${oldModelName}» دیگر موجود نیست. گپ به مدل پیش‌فرض بازگردانده شد.`);
+            
+            // گپ را با پیکربندی پیش‌فرض به‌روز کن و به UI اطلاع بده
+            await this.engine.chatManager.updateChatModel(activeChat.id, defaultConfig);
+            providerConfig = defaultConfig;
+            activeChat = this.engine.getActiveChat(); // دریافت مجدد گپ به‌روز شده
+        }
+
+        const providerStreamer = this.engine.providers.get(providerConfig.provider);
         if (!providerStreamer) {
-            this.engine.emit('error', `ارائه‌دهنده ${this.engine.settings.provider} پشتیبانی نمی‌شود.`);
+            this.engine.emit('error', `ارائه‌دهنده ${providerConfig.provider} پشتیبانی نمی‌شود.`);
             return;
         }
 
@@ -72,27 +109,11 @@ class MessageHandler {
         const hasImage = image && typeof image === 'object';
         if (!hasText && !hasImage) return;
 
-        if (userInput && typeof userInput !== 'string') {
-            this.engine.emit('error', 'ورودی پیام نامعتبر است.');
-            return;
-        }
         if (maxMessageLength !== Infinity && hasText && userInput.length > maxMessageLength) {
             this.engine.emit('error', `متن پیام نمی‌تواند بیشتر از ${maxMessageLength} کاراکتر باشد.`);
             return;
         }
-        if (hasImage && (typeof image.data !== 'string' || !image.data || typeof image.mimeType !== 'string' || !image.mimeType)) {
-             this.engine.emit('error', 'ساختار فایل تصویر پیوست شده نامعتبر است.');
-            return;
-        }
 
-        const activeChat = this.engine.getActiveChat();
-        if (!activeChat || !activeChat.messages) {
-            // این حالت نباید رخ دهد چون پیام‌ها باید قبل از ارسال بارگذاری شده باشند
-            this.engine.emit('error', 'گپ فعال برای ارسال پیام در دسترس نیست.');
-            return;
-        }
-
-        // --- اعتبارسنجی محدودیت‌های گپ ---
         const userMessageCount = activeChat.messages.filter(m => m.role === 'user').length;
         if (maxMessagesPerChat !== Infinity && userMessageCount >= maxMessagesPerChat) {
             this.engine.emit('error', `حداکثر ${maxMessagesPerChat} پیام در هر گپ مجاز است.`);
@@ -101,29 +122,16 @@ class MessageHandler {
 
         this.engine.setLoading(true);
         
-        // --- ایجاد پیام و به‌روزرسانی UI ---
-        const userMessage = {
-            id: generateMessageId(),
-            timestamp: Date.now(),
-            role: 'user',
-            content: userInput,
-            ...(image && { image })
-        };
-
+        const userMessage = { id: generateMessageId(), timestamp: Date.now(), role: 'user', content: userInput, ...(image && { image }) };
         activeChat.messages.push(userMessage);
         this.engine.emit('message', userMessage);
         
-        // --- منطق عنوان‌دهی خودکار ---
-        if (activeChat.messages.length === 1) {
-            let title = userInput.substring(0, 30);
-            if (!title && image) title = 'گپ با تصویر';
+        if (activeChat.messages.length === 1 && (userInput || image)) {
+            let title = userInput.substring(0, 30) || (image ? 'گپ با تصویر' : 'گپ جدید');
             if (userInput.length > 30) title += '...';
-            activeChat.title = title;
-            this.engine.emit('chatListUpdated', { chats: this.engine.chats, activeChatId: this.engine.activeChatId });
-            this.engine.emit('activeChatSwitched', activeChat);
+            await this.engine.chatManager.renameChat(activeChat.id, title);
         }
 
-        // --- فراخوانی API ---
         const modelMessage = { id: generateMessageId(), timestamp: Date.now(), role: 'model', content: '' };
         activeChat.messages.push(modelMessage);
         this.engine.emit('message', modelMessage);
@@ -133,23 +141,21 @@ class MessageHandler {
             const historyForApi = activeChat.messages.slice(0, -1);
             
             await providerStreamer(
-                this.engine.settings,
+                providerConfig, // از پیکربندی مخصوص گپ استفاده کن
                 historyForApi,
                 (chunk) => {
                     fullResponse += chunk;
                     this.engine.emit('chunk', chunk);
                 },
-                currentController.signal // ارسال سیگنال به ارائه‌دهنده
+                currentController.signal
             );
 
             const lastMsg = activeChat.messages[activeChat.messages.length - 1];
             if (lastMsg) lastMsg.content = fullResponse;
 
         } catch (error) {
-            // مدیریت لغو عمدی درخواست
             if (error.name === 'AbortError') {
                 console.log('درخواست به صورت عمدی لغو شد.');
-                 // حذف پیام خالی مدل در صورت لغو
                  if (activeChat.messages.length > 0 && activeChat.messages[activeChat.messages.length - 1].id === modelMessage.id) {
                     activeChat.messages.pop();
                     this.engine.emit('messageRemoved');
@@ -157,7 +163,6 @@ class MessageHandler {
             } else {
                 console.error('فراخوانی API ناموفق بود:', error);
                 const errorMessage = error.message || 'یک خطای ناشناخته رخ داد.';
-                // حذف پیام خالی مدل در صورت خطا
                 if (activeChat.messages.length > 0 && activeChat.messages[activeChat.messages.length - 1].role === 'model') {
                     activeChat.messages.pop();
                     this.engine.emit('messageRemoved');
@@ -165,7 +170,6 @@ class MessageHandler {
                 this.engine.emit('error', errorMessage);
             }
         } finally {
-            // کنترلر را فقط در صورتی null کن که هنوز کنترلر فعال باشد
             if (this.abortController === currentController) {
                 this.abortController = null;
             }

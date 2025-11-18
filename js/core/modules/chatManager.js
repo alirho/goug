@@ -1,5 +1,6 @@
 // وارد کردن تایپ‌ها برای JSDoc
 /** @typedef {import('../../types.js').Chat} Chat */
+/** @typedef {import('../../types.js').ProviderConfig} ProviderConfig */
 /** @typedef {import('../chatEngine.js').default} ChatEngine */
 
 /**
@@ -12,6 +13,47 @@ class ChatManager {
     constructor(engine) {
         /** @type {ChatEngine} */
         this.engine = engine;
+    }
+
+    /**
+     * پیکربندی ارائه‌دهنده پیش‌فرض را برای گپ‌های جدید تعیین می‌کند.
+     * اولویت با تنظیمات فعال کاربر است، سپس به پیکربندی پیش‌فرض از config.json بازمی‌گردد.
+     * @returns {ProviderConfig | null}
+     * @private
+     */
+    _getDefaultProviderConfig() {
+        const settings = this.engine.settings;
+        
+        // اولویت ۱: تنظیمات فعال کاربر
+        if (settings && this.engine.isSettingsValid(settings)) {
+            if (settings.provider === 'custom') {
+                const customConfig = settings.customProviders?.find(p => p.id === settings.customProviderId);
+                if (customConfig) {
+                    // یک کپی تمیز برای جلوگیری از جهش ایجاد کن
+                    return {
+                        provider: 'custom',
+                        name: customConfig.name,
+                        modelName: customConfig.modelName,
+                        apiKey: customConfig.apiKey,
+                        endpointUrl: customConfig.endpointUrl,
+                        customProviderId: customConfig.id,
+                    };
+                }
+            } else { // Gemini or OpenAI
+                return {
+                    provider: settings.provider,
+                    modelName: settings.modelName,
+                    apiKey: settings.apiKey,
+                };
+            }
+        }
+        
+        // اولویت ۲: ارائه‌دهنده پیش‌فرض از config.json
+        if (this.engine.defaultProvider && this.engine.isSettingsValid(this.engine.defaultProvider)) {
+            return this.engine.defaultProvider;
+        }
+
+        return null;
     }
 
     /**
@@ -29,6 +71,13 @@ class ChatManager {
             return;
         }
         
+        const defaultConfig = this._getDefaultProviderConfig();
+        if (!defaultConfig && this.engine.chats.length === 0) {
+            // اگر هیچ گپی وجود نداشته باشد و هیچ پیکربندی معتبری هم نباشد، کاری انجام نده.
+            // UI باید مودال تنظیمات را نشان دهد.
+            return;
+        }
+        
         const now = Date.now();
         const newChat = {
             id: `chat_${now}`,
@@ -36,9 +85,9 @@ class ChatManager {
             messages: [], // گپ جدید با پیام‌های خالی شروع می‌شود (از قبل بارگذاری شده).
             createdAt: now,
             updatedAt: now,
-            provider: this.engine.settings?.provider || 'unknown',
-            modelName: this.engine.settings?.modelName || 'unknown'
+            providerConfig: defaultConfig || { provider: 'unknown', modelName: 'unknown' }
         };
+
         this.engine.chats.push(newChat);
         this.engine.activeChatId = newChat.id;
         
@@ -96,6 +145,28 @@ class ChatManager {
         
         this.engine.emit('activeChatSwitched', chatToActivate);
         this.engine.emit('chatListUpdated', { chats: this.engine.chats, activeChatId: this.engine.activeChatId });
+    }
+
+    /**
+     * پیکربندی مدل برای یک گپ خاص را به‌روزرسانی می‌کند.
+     * @param {string} chatId - شناسه گپ برای به‌روزرسانی.
+     * @param {ProviderConfig} providerConfig - پیکربندی جدید ارائه‌دهنده.
+     * @returns {Promise<void>}
+     */
+    async updateChatModel(chatId, providerConfig) {
+        const chat = this.engine.chats.find(c => c.id === chatId);
+        if (chat) {
+            chat.providerConfig = providerConfig;
+            chat.updatedAt = Date.now();
+            await this.engine.storageManager.save(chat);
+            this.engine.syncManager.broadcastUpdate();
+            // به UI اطلاع بده که گپ فعال تغییر کرده تا هدر و سایر بخش‌ها به‌روز شوند
+            if (chat.id === this.engine.activeChatId) {
+                this.engine.emit('activeChatSwitched', chat);
+            }
+            // سایدبار را نیز به‌روز کن تا آیکون جدید نمایش داده شود
+            this.engine.emit('chatListUpdated', { chats: this.engine.chats, activeChatId: this.engine.activeChatId });
+        }
     }
 
     /**

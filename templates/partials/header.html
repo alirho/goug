@@ -1,7 +1,21 @@
 <!-- Header -->
 <header class="main-header">
-    <h2 id="main-title" class="main-title">گوگ</h2>
-    <button class="menu-button" id="menu-toggle-button">
-        <span class="material-symbols-outlined">menu</span>
-    </button>
+    <div class="header-left">
+        <button class="menu-button" id="menu-toggle-button">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+        <h2 id="main-title" class="main-title">گوگ</h2>
+    </div>
+    
+    <!-- دکمه انتخاب مدل -->
+    <div id="model-selector" class="model-selector hidden">
+        <button id="model-selector-button" class="btn btn-secondary">
+            <span id="model-selector-icon" class="material-symbols-outlined"></span>
+            <span id="model-selector-name"></span>
+            <span class="material-symbols-outlined">expand_more</span>
+        </button>
+        <div id="model-selector-dropdown" class="model-selector-dropdown hidden">
+            <!-- آیتم‌های مدل به صورت پویا در اینجا قرار می‌گیرند -->
+        </div>
+    </div>
 </header>

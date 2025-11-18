@@ -9,6 +9,7 @@ import { DEFAULT_LIMITS, PRESET_LIMITS } from '../utils/constants.js';
 /** @typedef {import('../types.js').Settings} Settings */
 /** @typedef {import('../types.js').Chat} Chat */
 /** @typedef {import('../types.js').ImageData} ImageData */
+/** @typedef {import('../types.js').ProviderConfig} ProviderConfig */
 /** @typedef {import('../types.js').StorageAdapter} StorageAdapter */
 /** @typedef {import('../types.js').ProviderHandler} ProviderHandler */
 
@@ -142,7 +143,10 @@ class ChatEngine extends EventEmitter {
      */
     isSettingsValid(settings) {
         if (!settings || !settings.provider) return false;
-        if (settings.provider === 'custom') return !!settings.endpointUrl;
+        if (settings.provider === 'custom') {
+            const activeCustom = settings.customProviders?.find(p => p.id === settings.customProviderId);
+            return !!activeCustom?.endpointUrl;
+        }
         return !!settings.apiKey;
     }
 
@@ -251,6 +255,16 @@ class ChatEngine extends EventEmitter {
      */
     async switchActiveChat(chatId) {
         await this.chatManager.switchActiveChat(chatId);
+    }
+
+    /**
+     * پیکربندی مدل برای یک گپ خاص را به‌روزرسانی می‌کند.
+     * @param {string} chatId - شناسه گپ برای به‌روزرسانی.
+     * @param {ProviderConfig} providerConfig - پیکربندی جدید ارائه‌دهنده.
+     * @returns {Promise<void>}
+     */
+    updateChatModel(chatId, providerConfig) {
+        return this.chatManager.updateChatModel(chatId, providerConfig);
     }
 
     /**

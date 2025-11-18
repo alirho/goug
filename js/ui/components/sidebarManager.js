@@ -52,6 +52,19 @@ class SidebarManager {
             this.container.appendChild(item);
         });
     }
+    
+    /**
+     * نام آیکون Material Symbols را برای یک ارائه‌دهنده برمی‌گرداند.
+     * @param {string} provider 
+     * @returns {string}
+     */
+    _getProviderIconName(provider) {
+        switch (provider) {
+            case 'gemini': return 'auto_awesome';
+            case 'openai': return 'psychology';
+            default: return 'hub';
+        }
+    }
 
     /**
      * یک المان آیتم گپ برای لیست سایدبار ایجاد می‌کند.
@@ -66,6 +79,13 @@ class SidebarManager {
         if (chat.id === activeChatId) {
             item.classList.add('active');
         }
+
+        // افزودن آیکون ارائه‌دهنده
+        const icon = document.createElement('span');
+        icon.className = 'material-symbols-outlined provider-icon';
+        icon.textContent = this._getProviderIconName(chat.providerConfig?.provider);
+        icon.title = chat.providerConfig?.provider || 'unknown';
+        item.appendChild(icon);
 
         const title = document.createElement('span');
         title.className = 'chat-title';
