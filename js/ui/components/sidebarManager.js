@@ -89,7 +89,9 @@ class SidebarManager {
         const icon = document.createElement('span');
         icon.className = 'material-symbols-outlined provider-icon';
         icon.textContent = this._getProviderIconName(providerType);
-        icon.title = modelInfo?.displayName || providerType;
+        // از resolver برای گرفتن نام نمایشی به‌روز استفاده کن
+        const displayInfo = this.engine.getModelDisplayInfo(modelInfo);
+        icon.title = displayInfo.displayName; // Tooltip is the name of the provider/config
         icon.dataset.provider = providerType;
         item.appendChild(icon);
 

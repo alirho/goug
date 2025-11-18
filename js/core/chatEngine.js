@@ -302,6 +302,38 @@ class ChatEngine extends EventEmitter {
     }
 
     /**
+     * اطلاعات نمایشی به‌روز یک مدل را بر اساس مرجع آن دریافت می‌کند.
+     * این متد ابتدا سعی می‌کند مدل را در تنظیمات فعلی پیدا کند. اگر پیدا نشد،
+     * به اطلاعات ذخیره شده در خود گپ بازمی‌گردد. این تضمین می‌کند که حتی اگر
+     * نام یک مدل تغییر کند، UI نام جدید را نمایش دهد.
+     * @param {ChatModelInfo} modelInfo - مرجع مدل از یک گپ.
+     * @returns {{displayName: string, modelName: string, provider: string}}
+     */
+    getModelDisplayInfo(modelInfo) {
+        if (!modelInfo) {
+            return { displayName: 'نامشخص', modelName: 'unknown', provider: 'custom' };
+        }
+
+        const resolvedConfig = this.resolveProviderConfig(modelInfo);
+        
+        if (resolvedConfig) {
+            // مدل موجود است، اطلاعات *فعلی* آن را برگردان
+            return {
+                displayName: resolvedConfig.name || (resolvedConfig.provider === 'gemini' ? 'Gemini' : resolvedConfig.provider === 'openai' ? 'ChatGPT' : 'سفارشی'),
+                modelName: resolvedConfig.modelName,
+                provider: resolvedConfig.provider
+            };
+        } else {
+            // مدل حذف شده است، به آخرین اطلاعات شناخته‌شده که در گپ ذخیره شده بازگرد
+            return {
+                displayName: modelInfo.displayName || 'مدل حذف شده',
+                modelName: modelInfo.modelName,
+                provider: modelInfo.provider
+            };
+        }
+    }
+
+    /**
      * تنظیمات جدید کاربر را ذخیره می‌کند.
      * @param {Settings} settings - آبجکت تنظیمات جدید.
      * @returns {Promise<void>}

@@ -234,16 +234,17 @@ class ChatUI {
         const modelInfo = chat.modelInfo;
         const isModelValid = !!this.engine.resolveProviderConfig(modelInfo);
         
-        const displayName = modelInfo.displayName || (modelInfo.provider === 'gemini' ? 'Gemini' : modelInfo.provider === 'openai' ? 'ChatGPT' : 'سفارشی');
-        
-        let buttonText = `${displayName}: ${modelInfo.modelName}`;
+        // از resolver برای دریافت اطلاعات نمایشی به‌روز استفاده کن
+        const displayInfo = this.engine.getModelDisplayInfo(modelInfo);
+
+        let buttonText = `${displayInfo.displayName}: ${displayInfo.modelName}`;
         if (!isModelValid) {
             buttonText = `⚠️ ${buttonText}`;
         }
         
         this.dom.modelSelectorName.textContent = buttonText;
-        this.dom.modelSelectorIcon.textContent = this._getProviderIconName(modelInfo.provider);
-        this.dom.modelSelectorIcon.dataset.provider = modelInfo.provider;
+        this.dom.modelSelectorIcon.textContent = this._getProviderIconName(displayInfo.provider);
+        this.dom.modelSelectorIcon.dataset.provider = displayInfo.provider;
         
         this._populateModelDropdown(chat);
         this.dom.modelSelector.classList.remove('hidden');
@@ -267,12 +268,13 @@ class ChatUI {
             item.className = 'model-selector-item invalid';
             item.title = 'این مدل دیگر موجود نیست';
             
-            const displayName = activeModelInfo.displayName || 'مدل حذف شده';
+            // از resolver برای گرفتن آخرین نام شناخته‌شده استفاده کن
+            const displayInfo = this.engine.getModelDisplayInfo(activeModelInfo);
 
             item.innerHTML = `
                 <div class="model-item-info">
-                    <span class="material-symbols-outlined provider-icon" data-provider="${activeModelInfo.provider}">${this._getProviderIconName(activeModelInfo.provider)}</span>
-                    <span class="model-item-name">⚠️ ${displayName}: ${activeModelInfo.modelName}</span>
+                    <span class="material-symbols-outlined provider-icon" data-provider="${displayInfo.provider}">${this._getProviderIconName(displayInfo.provider)}</span>
+                    <span class="model-item-name">⚠️ ${displayInfo.displayName}: ${displayInfo.modelName}</span>
                 </div>
             `;
             dropdown.appendChild(item);
@@ -354,16 +356,18 @@ class ChatUI {
     
         // ۲. ارائه‌دهنده پیش‌فرض را اضافه کن، اگر وجود داشته باشد و تکراری نباشد
         const defaultProvider = this.engine.defaultProvider;
-        if (defaultProvider && defaultProvider.modelName) {
+        if (defaultProvider && (defaultProvider.apiKey || defaultProvider.endpointUrl) && defaultProvider.modelName) {
             const isDuplicate = models.some(m => 
                 m.provider === defaultProvider.provider &&
-                m.modelName === defaultProvider.modelName
+                m.modelName === defaultProvider.modelName &&
+                // برای مدل‌های سفارشی، باید مطمئن شویم که واقعاً یک پیکربندی متفاوت است
+                (m.provider !== 'custom' || (m.provider === 'custom' && m.name === defaultProvider.name))
             );
     
             if (!isDuplicate) {
                  models.push({
                     provider: defaultProvider.provider,
-                    name: `${defaultProvider.name || 'مدل'} (پیش‌فرض)`,
+                    name: `${defaultProvider.name || (defaultProvider.provider === 'gemini' ? 'Gemini' : 'ChatGPT')} (پیش‌فرض)`,
                     modelName: defaultProvider.modelName,
                     // یک شناسه قراردادی برای شناسایی ارائه‌دهنده پیش‌فرض
                     customProviderId: defaultProvider.provider === 'custom' ? 'default_provider' : undefined
