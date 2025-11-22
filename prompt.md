@@ -1284,3 +1284,57 @@ core/
 - خطاهای شبکه رو مدیریت کنه
 
 نکته: این افزونه فقط در مرورگر یا Node.js 18+ کار می‌کنه (که fetch داره).
+
+### پرامپت ۱۱۲
+می‌خوام یک مثال کامل در examples/testCore.js بنویسی که: 
+1. هسته Peik رو import کنه
+2. همه افزونه‌ها رو import کنه
+3. افزونه‌ها رو با use() ثبت کنه به این ترتیب:
+   - MemoryStorage
+   - FetchHttp
+   - GeminiProvider
+4. peik.init() رو صدا بزنه
+5. یک گپ جدید بسازه با عنوان "آزمون هسته پیک"
+6. تنظیمات Gemini رو از متغیر محیطی یا یک مقدار ثابت بخونه:
+   {
+     provider: 'gemini',
+     apiKey: 'YOUR_API_KEY',
+     modelName: 'gemini-2.0-flash-exp'
+   }
+7. یک پیام ساده بفرسته: "سلام! لطفاً یک شعر کوتاه فارسی بگو."
+8. رویدادهای زیر رو گوش بده و لاگ کنه:
+   - 'ready': وقتی سیستم آماده شد
+   - 'chat:created': وقتی چت ساخته شد
+   - 'chunk': هر تکه از پاسخ (بدون console.log زیاد، فقط به stdout اضافه کن)
+   - 'response:complete': وقتی پاسخ کامل شد
+   - 'error': اگه خطایی رخ داد
+9. در انتها خلاصه‌ای نشون بده:
+   - تعداد پیام‌ها
+   - عنوان چت
+   - طول پاسخ نهایی
+این مثال باید با Node.js قابل اجرا باشه.
+
+همچنین یک فایل examples/README.md هم بنویس که توضیح بده چطوری اجرا کنیم.
+
+### پرامپت ۱۱۳
+وقتی اسکریپت آزمون را با دستور `node examples/testCore.js` اجرا می‌کنم، خطای زیر را دریافت می‌کنم:
+
+```js
+(node:53100) Warning: To load an ES module, set "type": "module" in the package.json or use the .mjs extension.
+(Use `node --trace-warnings ...` to show where the warning was created)
+/home/alireza/project/goug/examples/testCore.js:1
+import { Peik } from '../core/src/index.js';
+^^^^^^
+
+SyntaxError: Cannot use import statement outside a module
+    at internalCompileFunction (node:internal/vm:73:18)
+    at wrapSafe (node:internal/modules/cjs/loader:1153:20)
+    at Module._compile (node:internal/modules/cjs/loader:1205:27)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1295:10)
+    at Module.load (node:internal/modules/cjs/loader:1091:32)
+    at Module._load (node:internal/modules/cjs/loader:938:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:83:12)
+    at node:internal/main/run_main_module:23:47
+
+Node.js v20.9.0
+```

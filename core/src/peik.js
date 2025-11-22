@@ -17,15 +17,12 @@ export default class Peik extends EventEmitter {
     }
 
     /**
-     * ثبت افزونه (زنجیره‌ای)
+     * ثبت افزونه (زنجیره‌ای و Async)
      * @param {import('./plugin.js').default} plugin 
+     * @returns {Promise<Peik>}
      */
-    use(plugin) {
-        // عملیات register async است، اما اینجا برای استفاده زنجیره‌ای Promise را نگه می‌داریم
-        // یا فرض می‌کنیم کاربر await peik.init() را صدا می‌زند که همه چیز را نهایی کند.
-        // بهترین روش: کاربر باید await peik.use(...) کند اگر نیاز به ترتیب دارد،
-        // اما برای پیکربندی اولیه ما آن را در صف می‌گذاریم؟ نه، ساده نگه می‌داریم.
-        this.pluginManager.register(plugin);
+    async use(plugin) {
+        await this.pluginManager.register(plugin);
         return this;
     }
 
