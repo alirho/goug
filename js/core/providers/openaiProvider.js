@@ -1,3 +1,4 @@
+
 import { fetchStreamWithRetries } from '../../services/apiService.js';
 import { getErrorMessageForStatus } from '../../utils/apiErrors.js';
 
@@ -33,7 +34,7 @@ export function buildOpenAIRequestBody(history) {
     });
     messages.unshift({
         role: 'system',
-        content: 'You are a helpful assistant named Goug. Your responses should be in Persian.'
+        content: 'You are a helpful assistant named Peik. Your responses should be in Persian.'
     });
     return { messages };
 }

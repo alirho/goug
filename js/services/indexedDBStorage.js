@@ -11,7 +11,7 @@ import {
     GenericStorageError,
 } from '../utils/customErrors.js';
 
-const DB_NAME = 'GougDB';
+const DB_NAME = 'PeikDB';
 const DB_VERSION = 1;
 const CHATS_STORE_NAME = 'chats';
 const SETTINGS_STORE_NAME = 'settings';

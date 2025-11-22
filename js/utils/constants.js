@@ -17,7 +17,7 @@ export const UI_TIMEOUTS = {
 
 // Cross-tab synchronization configuration
 export const SYNC_CONFIG = {
-    CHANNEL_NAME: 'goug-chat-sync',
+    CHANNEL_NAME: 'peik-chat-sync',
 };
 
 // Storage related configurations

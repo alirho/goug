@@ -1,3 +1,4 @@
+
 import EventEmitter from './eventEmitter.js';
 import ChatManager from './modules/chatManager.js';
 import MessageHandler from './modules/messageHandler.js';
@@ -76,7 +77,7 @@ class ChatEngine extends EventEmitter {
             this.storage = createInMemoryStorage();
             console.warn(`
 /******************************************************************\\
-* هشدار GOUG: هیچ آداپتور ذخیره‌سازی ارائه نشده است.              *
+* هشدار PEIK: هیچ آداپتور ذخیره‌سازی ارائه نشده است.              *
 * برنامه در حالت حافظه موقت (in-memory) اجرا خواهد شد.           *
 * تمام گپ‌ها و تنظیمات پس از رفرش صفحه از بین خواهند رفت.       *
 *                                                                *

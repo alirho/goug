@@ -1,3 +1,4 @@
+
 import { fetchStreamWithRetries } from '../../services/apiService.js';
 import { getErrorMessageForStatus } from '../../utils/apiErrors.js';
 
@@ -39,7 +40,7 @@ function buildGeminiRequestBody(history) {
     return {
         contents: contents,
         systemInstruction: {
-            parts: [{ text: 'You are a helpful assistant named Goug. Your responses should be in Persian.' }]
+            parts: [{ text: 'You are a helpful assistant named Peik. Your responses should be in Persian.' }]
         }
     };
 }

@@ -1,10 +1,10 @@
-# گوگ (گپ و گفت)
+# پیک (Peik)
 
-![گوگ](https://img.shields.io/badge/Goug-v0.7.0-blue)
+![پیک](https://img.shields.io/badge/Peik-v0.6.0-blue)
 ![زبان](https://img.shields.io/badge/Language-Persian-green)
 ![مجوز](https://img.shields.io/badge/License-MIT-yellow)
 
-**گوگ** یک ابزار چت ساده، زیبا و قدرتمند با هوش مصنوعی است که برای مکالمات روان و سریع طراحی شده است. این پروژه به صورت کامل در فرانت‌اند (Frontend) و با استفاده از جاوااسکریپت خالص (Vanilla JS) پیاده‌سازی شده و از چندین ارائه‌دهنده بزرگ هوش مصنوعی پشتیبانی می‌کند.
+**پیک** یک ابزار چت ساده، زیبا و قدرتمند با هوش مصنوعی است که برای مکالمات روان و سریع طراحی شده است. این پروژه به صورت کامل در فرانت‌اند (Frontend) و با استفاده از جاوااسکریپت خالص (Vanilla JS) پیاده‌سازی شده و از چندین ارائه‌دهنده بزرگ هوش مصنوعی پشتیبانی می‌کند.
 
 <center><img src="/assets/images/logo.svg" alt="logo" width="80" height="80"></center>
 
@@ -49,8 +49,8 @@
 
 1.  **مخزن (Repository) را کلون کنید:**
     ```bash
-    git clone https://github.com/your-username/goug-ai-chat.git
-    cd goug-ai-chat
+    git clone https://github.com/your-username/peik-ai-chat.git
+    cd peik-ai-chat
     ```
 
 2.  **یک سرور محلی اجرا کنید:**
@@ -116,7 +116,7 @@
 پروژه دارای یک معماری ماژولار و تمیز است تا توسعه و نگهداری آن آسان باشد:
 
 ```
-goug/
+peik/
 ├── index.html              # فایل ورودی اصلی
 ├── config.json             # (اختیاری) پیکربندی پیش‌فرض
 │
