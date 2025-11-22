@@ -1241,3 +1241,29 @@ core/
 - تمام متدهای لازم رو پیاده‌سازی کنه
 
 این افزونه رو در plugins/platform/memoryStorage/ بساز.
+
+### پرامپت ۱۰۹
+می‌خوام دو افزونه Provider بسازیم:
+
+1. Gemini Provider: در مسیر plugins/core/geminiProvider/index.js این افزونه باید:
+- از ProviderInterface پیروی کنه
+- با Google Gemini API کار کنه
+- از طریق HttpClient (که از PluginManager دریافت می‌شه) درخواست بفرسته
+- پشتیبانی از Stream داشته باشه
+- تاریخچه پیام‌ها رو به فرمت Gemini تبدیل کنه
+- خطاهای API رو مدیریت کنه
+
+2. OpenAI Provider: در مسیر plugins/core/openaiProvider/index.js. این افزونه باید:
+- از ProviderInterface پیروی کنه
+- با OpenAI API (ChatGPT) کار کنه
+- از طریق HttpClient درخواست بفرسته
+- پشتیبانی از Stream داشته باشه
+- تاریخچه پیام‌ها رو به فرمت OpenAI تبدیل کنه
+- خطاهای API رو مدیریت کنه
+
+## نکات مهم:
+- هر دو باید از Plugin ارث‌بری کنن
+- category باید 'provider' باشه
+- نباید مستقیماً fetch استفاده کنن، از HttpClient استفاده کنن
+- باید validateConfig داشته باشن (بررسی apiKey و modelName)
+- فرمت پیام‌های پیک رو به فرمت API مربوطه تبدیل کنن
