@@ -1163,3 +1163,73 @@ sidebarManager.js:180:34
 
 ### پرامپت ۱۰۶
 نام پروژه از «گوگ» به «پیک» (peik) تغییر کرده. در تمام پروژه این تغییر را اعمال کن.
+
+### پرامپت ۱۰۷
+خب، حالا می‌خوام معماری پیک را کمی تغییر بدیم، در این معماری هسته پیک را باید جدا کن. ساخت یک هسته مستقل که:
+- هیچ وابستگی به محیط خاص (DOM، مرورگر، ...) نداره
+- فقط منطق اصلی رو داره
+- در هر محیطی کار می‌کنه
+- بر اساس معماری افزونه‌محور طراحی شده
+- ساختار هسته:
+```
+core/
+├── src/
+│   ├── peik.js                    # کلاس اصلی و نقطه ورود
+│   ├── chat.js                    # کلاس مدیریت یک گفتگو
+│   ├── pluginManager.js           # مدیر افزونه‌ها
+│   ├── plugin.js                  # کلاس پایه افزونه
+│   ├── eventEmitter.js            # سیستم رویداد
+│   │
+│   ├── interfaces/                # قراردادهای استاندارد
+│   │   ├── storageInterface.js    # قرارداد ذخیره‌سازی
+│   │   ├── httpClientInterface.js # قرارداد ارتباط شبکه
+│   │   └── providerInterface.js   # قرارداد ارائه‌دهندگان
+│   │
+│   ├── utils/                     # ابزارهای کمکی
+│   │   ├── errors.js              # کلاس‌های خطای سفارشی
+│   │   ├── validator.js           # توابع اعتبارسنجی
+│   │   └── serializer.js          # سریال‌سازی و deserialize
+│   │
+│   └── index.js                   # Export عمومی همه چیز
+│
+└── package.json
+```
+
+اصول مهم که باید رعایت بشن:
+1. Async-First: تمام عملیات اصلی باید async باشن (برای سازگاری با محیط‌های مختلف مثل Web Workers)
+2. Serializable Data: داده‌های رد و بدل شده باید JSON-serializable باشن (نه Function، نه DOM Reference)
+3. Isolated Communication: ارتباط بین اجزا فقط از طریق Interface ها و Event System
+4. Event-Driven: جریان اصلی بر پایه رویداد، نه فراخوانی مستقیم
+
+نکات پیاده‌سازی:
+1. Interface ها: باید به صورت کلاس پایه باشن که متدهاشون خطا پرتاب می‌کنن (باید توسط افزونه‌ها پیاده‌سازی بشن).
+    - StorageInterface: متدهایی مثل saveChat, getChat, getAllChats, deleteChat, ...
+    - HttpClientInterface: متدهایی مثل request, streamRequest
+    - ProviderInterface: متدهایی مثل sendMessage, validateConfig, formatMessages
+2. کلاس Plugin: یک کلاس پایه با:
+    - metadata استاتیک (name, version, category, type, description, author, dependencies)
+    - چهار متد چرخه حیات: install(), activate(), deactivate(), uninstall()
+3. کلاس PluginManager: مدیریت افزونه‌ها
+    - register, install, uninstall
+    - getPlugin, getPluginsByType, getPluginsByCategory
+    - سیستم Hook: registerHook, executeHook
+    - بررسی وابستگی‌ها
+4. کلاس Chat: مدیریت یک گفتگو
+    - sendMessage (با پشتیبانی Stream)
+    - getMessages, updateTitle, changeProvider
+    - export/import
+    - رویدادها: message:sending, message:sent, chunk, response:complete, error, ...
+5. کلاس Peik: کلاس اصلی
+    - init: راه‌اندازی، بارگذاری config و افزونه‌ها
+    - createChat, getChat, getAllChats, deleteChat
+    - importChat, exportChat, exportAll
+    - updateSettings, getSettings
+    - use: میانبر برای register افزونه (chainable)
+
+استفاده از کدهای موجود:
+می‌تونی از منطق کدهای موجود در js/core/ و js/utils/ استفاده کنی، ولی:
+- همه وابستگی‌های محیطی رو حذف کن
+- ساختار رو مطابق معماری جدید تغییر بده
+- از اصول چهارگانه پیروی کن
+
+دقت کن که فقط همین بخش‌هایی که گفتم را تغییر بدی.

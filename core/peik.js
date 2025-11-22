@@ -1,0 +1,198 @@
+import EventEmitter from './eventEmitter.js';
+import PluginManager from './pluginManager.js';
+import Chat from './chat.js';
+import { PeikError, StorageError } from './utils/errors.js';
+import { Serializer } from './utils/serializer.js';
+
+export default class Peik extends EventEmitter {
+    constructor(config = {}) {
+        super();
+        this.config = config; // تنظیمات اولیه (مثل defaultProvider)
+        
+        this.settings = { providers: { custom: [] } }; // تنظیمات کاربر
+        this.pluginManager = new PluginManager(this);
+        
+        this.chats = []; // لیستی از خلاصه چت‌ها (بدون پیام)
+        this.activeChat = null;
+    }
+
+    /**
+     * ثبت افزونه (زنجیره‌ای)
+     * @param {import('./plugin.js').default} plugin 
+     */
+    use(plugin) {
+        // عملیات register async است، اما اینجا برای استفاده زنجیره‌ای Promise را نگه می‌داریم
+        // یا فرض می‌کنیم کاربر await peik.init() را صدا می‌زند که همه چیز را نهایی کند.
+        // بهترین روش: کاربر باید await peik.use(...) کند اگر نیاز به ترتیب دارد،
+        // اما برای پیکربندی اولیه ما آن را در صف می‌گذاریم؟ نه، ساده نگه می‌داریم.
+        this.pluginManager.register(plugin);
+        return this;
+    }
+
+    /**
+     * راه‌اندازی نهایی سیستم
+     */
+    async init() {
+        // 1. بارگذاری تنظیمات از Storage
+        const storage = this.getStorage();
+        if (storage) {
+            try {
+                const loadedSettings = await storage.loadSettings();
+                if (loadedSettings) {
+                    this.settings = { ...this.settings, ...loadedSettings };
+                }
+                
+                // 2. بارگذاری لیست چت‌ها
+                this.chats = await storage.getAllChats();
+            } catch (error) {
+                console.error('خطا در بارگذاری اولیه:', error);
+                this.emit('error', new StorageError('بارگذاری داده‌ها ناموفق بود.'));
+            }
+        } else {
+            console.warn('هیچ افزونه ذخیره‌سازی (Storage) یافت نشد. داده‌ها ذخیره نخواهند شد.');
+        }
+
+        this.emit('ready', { settings: this.settings, chats: this.chats });
+    }
+
+    /**
+     * دریافت افزونه ذخیره‌سازی فعال
+     * (اولین افزونه‌ای که category='storage' داشته باشد)
+     */
+    getStorage() {
+        const storages = this.pluginManager.getPluginsByCategory('storage');
+        return storages.length > 0 ? storages[0] : null;
+    }
+
+    /**
+     * ایجاد یک چت جدید
+     */
+    async createChat(title = 'گپ جدید') {
+        const defaultModel = this._getDefaultModelInfo();
+        
+        const chatData = {
+            id: `chat_${Date.now()}`,
+            title,
+            messages: [],
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            modelInfo: defaultModel
+        };
+
+        const chat = new Chat(this, chatData);
+        
+        // افزودن به لیست خلاصه‌ها
+        this.chats.unshift(chat.toJSON()); // فقط دیتا را نگه می‌داریم
+        
+        // ذخیره
+        await chat.save();
+        
+        this.emit('chat:created', chat);
+        return chat;
+    }
+
+    /**
+     * دریافت یک چت کامل (با پیام‌ها)
+     * @param {string} chatId 
+     * @returns {Promise<Chat>}
+     */
+    async getChat(chatId) {
+        // اگر چت فعال فعلی همان است، آن را برگردان
+        if (this.activeChat && this.activeChat.id === chatId) {
+            return this.activeChat;
+        }
+
+        const storage = this.getStorage();
+        if (!storage) throw new StorageError('ذخیره‌سازی در دسترس نیست.');
+
+        const chatData = await storage.loadChat(chatId);
+        if (!chatData) throw new PeikError('چت یافت نشد.');
+
+        const chatInstance = new Chat(this, chatData);
+        this.activeChat = chatInstance;
+        return chatInstance;
+    }
+
+    /**
+     * حذف چت
+     * @param {string} chatId 
+     */
+    async deleteChat(chatId) {
+        const storage = this.getStorage();
+        if (storage) {
+            await storage.deleteChat(chatId);
+        }
+        
+        this.chats = this.chats.filter(c => c.id !== chatId);
+        
+        if (this.activeChat && this.activeChat.id === chatId) {
+            this.activeChat = null;
+        }
+        
+        this.emit('chat:deleted', chatId);
+    }
+
+    /**
+     * ذخیره تنظیمات سراسری
+     * @param {object} newSettings 
+     */
+    async updateSettings(newSettings) {
+        this.settings = newSettings;
+        const storage = this.getStorage();
+        if (storage) {
+            await storage.saveSettings(this.settings);
+        }
+        this.emit('settings:updated', this.settings);
+    }
+
+    /**
+     * منطق پیدا کردن پیکربندی کامل مدل (مشابه نسخه قبل)
+     * @param {object} modelInfo 
+     */
+    resolveProviderConfig(modelInfo) {
+        if (!modelInfo) return null;
+        
+        // منطق جستجو در settings.providers و config.defaultProvider
+        // (کد ساده شده برای اختصار)
+        const { provider, customProviderId } = modelInfo;
+        
+        if (this.settings.providers) {
+            if (provider === 'custom') {
+                return this.settings.providers.custom?.find(p => p.id === customProviderId);
+            }
+            if (this.settings.providers[provider]) {
+                return { provider, ...this.settings.providers[provider] };
+            }
+        }
+        
+        // Fallback to default config
+        if (this.config.defaultProvider && this.config.defaultProvider.provider === provider) {
+             return this.config.defaultProvider;
+        }
+
+        return null;
+    }
+
+    _getDefaultModelInfo() {
+        // منطق انتخاب مدل پیش‌فرض
+        if (this.settings.activeProviderId) {
+            // ... logic to find active provider info
+            const id = this.settings.activeProviderId;
+            if (id === 'gemini' || id === 'openai') {
+                const p = this.settings.providers[id];
+                return { provider: id, displayName: id === 'gemini' ? 'Gemini' : 'ChatGPT', modelName: p?.modelName };
+            }
+            const custom = this.settings.providers.custom?.find(c => c.id === id);
+            if (custom) {
+                return { provider: 'custom', customProviderId: custom.id, displayName: custom.name, modelName: custom.modelName };
+            }
+        }
+        
+        if (this.config.defaultProvider) {
+            const def = this.config.defaultProvider;
+            return { provider: def.provider, displayName: def.name || def.provider, modelName: def.modelName };
+        }
+
+        return { provider: 'unknown', displayName: 'نامشخص', modelName: '' };
+    }
+}
