@@ -31,13 +31,8 @@ export default class UIManager {
         this.bindGlobalEvents();
         
         const chats = this.peik.chats || [];
-        this.sidebar.render(chats, null);
-
-        if (chats.length === 0 && (!this.peik.config || !this.peik.config.defaultProvider)) {
-            this.settingsModal.show(true);
-        } else if (chats.length > 0) {
-            const lastChatId = chats[0].id;
-            await this.switchChat(lastChatId);
+        if (chats.length > 0) {
+            this.sidebar.render(chats, null);
         }
     }
 
@@ -62,6 +57,17 @@ export default class UIManager {
     }
 
     bindCoreEvents() {
+        this.peik.on('ready', ({ chats }) => {
+            this.sidebar.render(chats, null);
+            
+            if (chats.length > 0) {
+                const lastChatId = chats[0].id;
+                this.switchChat(lastChatId);
+            } else if (!this.peik.config || !this.peik.config.defaultProvider) {
+                this.settingsModal.show(true);
+            }
+        });
+
         this.peik.on('chat:created', (chat) => {
             this.sidebar.addChat(chat);
             this.switchChat(chat.id);

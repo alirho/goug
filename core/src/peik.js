@@ -170,6 +170,32 @@ export default class Peik extends EventEmitter {
         return null;
     }
 
+    /**
+     * اطلاعات نمایشی مدل را برمی‌گرداند.
+     * @param {object} modelInfo 
+     */
+    getModelDisplayInfo(modelInfo) {
+        if (!modelInfo) {
+            return { displayName: 'نامشخص', modelName: 'unknown', provider: 'custom' };
+        }
+
+        const resolvedConfig = this.resolveProviderConfig(modelInfo);
+        
+        if (resolvedConfig) {
+            return {
+                displayName: resolvedConfig.name || (resolvedConfig.provider === 'gemini' ? 'Gemini' : resolvedConfig.provider === 'openai' ? 'ChatGPT' : 'سفارشی'),
+                modelName: resolvedConfig.modelName,
+                provider: resolvedConfig.provider
+            };
+        } else {
+            return {
+                displayName: modelInfo.displayName || 'مدل حذف شده',
+                modelName: modelInfo.modelName,
+                provider: modelInfo.provider
+            };
+        }
+    }
+
     _getDefaultModelInfo() {
         // منطق انتخاب مدل پیش‌فرض
         if (this.settings.activeProviderId) {

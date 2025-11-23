@@ -9,7 +9,7 @@ export default class WebUIPlugin extends Plugin {
             category: 'presentation',
             description: 'رابط کاربری وب استاندارد',
             author: 'Peik Team',
-            dependencies: ['storage']
+            dependencies: []
         };
     }
 
@@ -33,7 +33,6 @@ export default class WebUIPlugin extends Plugin {
     _loadStyles() {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
-        // مسیر فایل استایل اصلی در داخل افزونه
         link.href = 'plugins/presentation/webUI/styles/main.css'; 
         document.head.appendChild(link);
     }

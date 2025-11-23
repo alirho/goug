@@ -1435,3 +1435,41 @@ plugins/presentation/webUI/
     - WebUI
   - همه رو ثبت کنه
   - peik.init() رو صدا بزنه
+
+### پرامپت ۱۲۰
+در کنسول مرورگر خطای زیر نمایش داده می‌شه:
+
+```js
+❌ خطای مهلک در راه‌اندازی: PluginError: وابستگی‌های زیر برای web-ui یافت نشد: storage
+    PeikError http://localhost:3000/core/src/utils/errors.js:6
+    PluginError http://localhost:3000/core/src/utils/errors.js:21
+    register http://localhost:3000/core/src/pluginManager.js:26
+    use http://localhost:3000/core/src/peik.js:25
+    <anonymous> http://localhost:3000/:44
+localhost:3000:51:25
+    <anonymous> http://localhost:3000/:51
+```
+
+افزونه webUI نباید به ذخیره‌ساز وابستگی داشته باشه، باید با هر ذخیره‌سازی بتونه کار کنه. در این جا ما `memoryStorage` را به عنوان ذخیره‌ساز قرار دادیم پس باید کار کنه.
+
+### پرامپت ۱۲۱
+با انتخاب دکمه «گپ جدید» خطای زیر در کنسول نمایش داده می‌شه:
+
+```js
+Uncaught (in promise) TypeError: this.peik.getModelDisplayInfo is not a function
+    updateHeader http://localhost:3000/plugins/presentation/webUI/uiManager.js:148
+    switchChat http://localhost:3000/plugins/presentation/webUI/uiManager.js:131
+    bindCoreEvents http://localhost:3000/plugins/presentation/webUI/uiManager.js:73
+    emit http://localhost:3000/core/src/eventEmitter.js:46
+    emit http://localhost:3000/core/src/eventEmitter.js:44
+    createChat http://localhost:3000/core/src/peik.js:87
+    createNewChat http://localhost:3000/plugins/presentation/webUI/uiManager.js:120
+    bindGlobalEvents http://localhost:3000/plugins/presentation/webUI/uiManager.js:104
+    bindGlobalEvents http://localhost:3000/plugins/presentation/webUI/uiManager.js:104
+    init http://localhost:3000/plugins/presentation/webUI/uiManager.js:31
+    activate http://localhost:3000/plugins/presentation/webUI/index.js:29
+    register http://localhost:3000/core/src/pluginManager.js:35
+    use http://localhost:3000/core/src/peik.js:25
+    <anonymous> http://localhost:3000/:44
+    async* http://localhost:3000/:63
+```
