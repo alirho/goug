@@ -1584,3 +1584,15 @@ async renameChat(chatId, newTitle) {
 
 ### پرامپت ۱۳۵
 پیام‌های مدل هوش به صورت خام نمایش داده می‌شه و به مارک‌داون رندر نمی‌شه.
+
+### پرامپت ۱۳۶
+زمان اجرای پروژه خطای زیر در کنسول نمایش داده می‌شه:
+
+```js
+GET
+http://localhost:3000/js/utils/customErrors.js
+NS_ERROR_CORRUPTED_CONTENT
+
+Loading module from “http://localhost:3000/js/utils/customErrors.js” was blocked because of a disallowed MIME type (“text/html”).
+localhost:3000
+```

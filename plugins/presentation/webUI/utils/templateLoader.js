@@ -1,4 +1,13 @@
-import { TemplateLoadError } from '../../../../js/utils/customErrors.js';
+import { Errors } from '../../../../core/src/index.js';
+
+/**
+ * خطای مخصوص بارگذاری قالب
+ */
+class TemplateLoadError extends Errors.PeikError {
+    constructor(path) {
+        super(`بارگذاری قالب از مسیر «${path}» با خطا مواجه شد.`, 'TEMPLATE_LOAD_ERROR');
+    }
+}
 
 /**
  * یک قالب HTML را از مسیر داده شده بارگذاری می‌کند.
