@@ -1503,3 +1503,30 @@ Uncaught (in promise) TypeError: this.engine.saveSettings is not a function
 
 ### پرامپت ۱۲۷
 مشکل اصلی در افزونه webUI است که از نام‌گذاری‌های قدیمی استفاده می‌کنه. باید فایل `plugins/presentation/webUI/components/settingsModal.js` را با ساختار جدید هماهنگ کنی.
+
+### پرامپت ۱۲۸
+می‌خوام یک افزونه CustomProvider بسازی برای مدل‌های سفارشی (مثل Ollama). مسیر plugins/core/customProvider/index.js
+- از Plugin ارث‌بری کنه
+- از ProviderInterface پیروی کنه
+- category اش 'provider' باشه
+- metadata.name اش 'custom' باشه
+- از HttpClient استفاده کنه
+- با APIهای سازگار با OpenAI کار کنه (مثل Ollama)
+- پشتیبانی از Stream داشته باشه
+- endpoint URL رو از config دریافت کنه (چون custom هست)
+- endpoint URL از config.endpointUrl بخونه (نه hard-coded)
+- اگر apiKey نبود، خطا نده (برخی APIهای محلی نیاز ندارن)
+
+در index.html اضافه‌اش کن.
+
+### پرامپت ۱۲۹
+در کنسول مرورگر خطای زیر نمایش داده می‌شه:
+
+```js
+خطا در ارسال پیام: ProviderError: Stream API Error: 401
+    PeikError http://localhost:3000/core/src/utils/errors.js:6
+    ProviderError http://localhost:3000/core/src/utils/errors.js:33
+    sendMessage http://localhost:3000/plugins/core/customProvider/index.js:66
+chat.js:110:25
+    sendMessage http://localhost:3000/core/src/chat.js:110
+```
