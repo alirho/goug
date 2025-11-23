@@ -4,6 +4,11 @@ export default class MessageList {
     constructor(container, lightboxManager) {
         this.container = container;
         this.lightboxManager = lightboxManager;
+
+        // شروع بارگذاری سرویس مارک‌داون
+        markdownService.load().then(() => {
+            this.rerenderUnprocessedMessages();
+        });
     }
 
     clear() {
@@ -41,11 +46,13 @@ export default class MessageList {
             bubble.innerHTML = ''; 
         }
 
-        const contentDiv = bubble.querySelector('.content-text') || bubble;
-        if (bubble.querySelector('.content-text')) {
-             bubble.querySelector('.content-text').innerHTML = this._renderContent(newRaw);
-        } else {
-             bubble.innerHTML = this._renderContent(newRaw);
+        const contentDiv = bubble.querySelector('.content-text');
+        const target = contentDiv || bubble;
+        
+        target.innerHTML = this._renderContent(newRaw);
+        
+        if (!markdownService.isLoaded()) {
+            bubble.dataset.needsMarkdown = 'true';
         }
         
         this.scrollToBottom();
@@ -82,6 +89,10 @@ export default class MessageList {
             contentDiv.className = 'content-text';
             contentDiv.innerHTML = this._renderContent(content);
             bubble.appendChild(contentDiv);
+
+            if (!markdownService.isLoaded()) {
+                bubble.dataset.needsMarkdown = 'true';
+            }
         }
 
         if (message.role === 'user' && message.image) {
@@ -143,6 +154,20 @@ export default class MessageList {
 
     _renderContent(text) {
         return markdownService.render(text);
+    }
+
+    rerenderUnprocessedMessages() {
+        if (!markdownService.isLoaded()) return;
+
+        const bubbles = this.container.querySelectorAll('[data-needs-markdown="true"]');
+        bubbles.forEach(bubble => {
+            const raw = bubble.dataset.raw;
+            if (raw) {
+                const target = bubble.querySelector('.content-text') || bubble;
+                target.innerHTML = markdownService.render(raw);
+                delete bubble.dataset.needsMarkdown;
+            }
+        });
     }
 
     scrollToBottom() {
