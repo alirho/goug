@@ -11,16 +11,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;900&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
 
-    <!-- WebUI Styles -->
+    <!-- WebUI Plugin Styles -->
     <link rel="stylesheet" href="plugins/presentation/webUI/styles/main.css">
 </head>
 <body>
     <div id="root"></div>
     
-    <!-- Main Application Script -->
+    <!-- Main Application Script (Module) -->
     <script type="module">
         import { Peik } from './core/src/index.js';
-        import MemoryStorage from './plugins/platform/memoryStorage/index.js';
+        import IndexedDBStorage from './plugins/platform/indexeddbStorage/index.js';
         import FetchHttp from './plugins/platform/fetchHttp/index.js';
         import GeminiProvider from './plugins/core/geminiProvider/index.js';
         import OpenAIProvider from './plugins/core/openaiProvider/index.js';
@@ -32,8 +32,7 @@
                 const peik = new Peik();
 
                 // ۱. ثبت افزونه‌های زیرساختی
-                // نکته: برای ذخیره‌سازی دائمی باید از IndexedDBPlugin استفاده شود (فعلا MemoryStorage برای تست)
-                await peik.use(new MemoryStorage());
+                await peik.use(new IndexedDBStorage());
                 await peik.use(new FetchHttp());
 
                 // ۲. ثبت ارائه‌دهندگان هوش مصنوعی

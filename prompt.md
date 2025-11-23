@@ -1473,3 +1473,16 @@ Uncaught (in promise) TypeError: this.peik.getModelDisplayInfo is not a function
     <anonymous> http://localhost:3000/:44
     async* http://localhost:3000/:63
 ```
+
+### پرامپت ۱۲۲
+می‌خوام یک افزونه IndexedDBStorage بسازی که داده‌ها رو دائمی ذخیره کنه. افزونه در مسیر plugins/platform/indexeddbStorage/index.js ساخته بشه.
+- از Plugin ارث‌بری کنه
+- از StorageInterface پیروی کنه
+- category اش 'storage' باشه
+- از IndexedDB مرورگر استفاده کنه
+- تمام متدهای StorageInterface رو پیاده‌سازی کنه:
+  - saveSettings / loadSettings
+  - saveChat / loadChat / getAllChats / deleteChat
+- در نسخه قدیمی یک فایل `js/services/indexedDBStorage.js` داشتیم که خوب کار می‌کرد، می‌تونی از منطقش استفاده کنی ولی به صورت افزونه بنویس.
+
+بعد از ساختن این افزونه، در index.html به جای MemoryStorage از IndexedDBStorage استفاده کن.
