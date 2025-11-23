@@ -1486,3 +1486,6 @@ Uncaught (in promise) TypeError: this.peik.getModelDisplayInfo is not a function
 - در نسخه قدیمی یک فایل `js/services/indexedDBStorage.js` داشتیم که خوب کار می‌کرد، می‌تونی از منطقش استفاده کنی ولی به صورت افزونه بنویس.
 
 بعد از ساختن این افزونه، در index.html به جای MemoryStorage از IndexedDBStorage استفاده کن.
+
+### پرامپت ۱۲۳
+پیام‌ها مدل هوش در حباب مخصوص به خودش نمایش داده نمی‌شه و بدون هیچ استایلی در زیر پیام کاربر (سمت راست) نمایش داده می‌شه.

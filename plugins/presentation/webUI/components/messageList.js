@@ -19,30 +19,8 @@ export default class MessageList {
     appendMessage(message) {
         if (this.container.querySelector(`[data-id="${message.id}"]`)) return;
 
-        const el = document.createElement('div');
-        el.className = `message ${message.role}`;
-        el.dataset.id = message.id;
-        
-        const bubble = document.createElement('div');
-        bubble.className = 'message-bubble';
-        
-        let content = message.content || '';
-        if (!content && message.role === 'model') {
-            content = '<span class="typing-indicator">...</span>';
-        } else {
-            content = this._renderContent(content);
-        }
-        bubble.innerHTML = content;
-
-        if (message.role === 'user' && message.image) {
-            const img = document.createElement('img');
-            img.src = `data:${message.image.mimeType};base64,${message.image.data}`;
-            img.className = 'message-image';
-            el.appendChild(img);
-        }
-
-        el.appendChild(bubble);
-        this.container.appendChild(el);
+        const { element } = this._createMessageElement(message);
+        this.container.appendChild(element);
         this.scrollToBottom();
     }
 
@@ -58,8 +36,80 @@ export default class MessageList {
         const newRaw = currentRaw + chunk;
         bubble.dataset.raw = newRaw;
         
+        // اگر محتوا قبلاً فقط لودینگ بود، پاکش کن
+        if (currentRaw === '') {
+            bubble.innerHTML = ''; 
+        }
+
         bubble.innerHTML = this._renderContent(newRaw);
         this.scrollToBottom();
+    }
+
+    _createMessageElement(message) {
+        // نگاشت نقش مدل به کلاس CSS مناسب
+        const roleClass = message.role === 'model' ? 'assistant' : 'user';
+        const labelText = message.role === 'user' ? 'شما' : 'دستیار هوش مصنوعی';
+        
+        const wrapper = document.createElement('div');
+        wrapper.className = `message ${roleClass}`;
+        wrapper.dataset.id = message.id;
+
+        // آواتار
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+
+        // کانتینر محتوا (شامل لیبل و حباب)
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'message-content';
+
+        // برچسب نام
+        const label = document.createElement('p');
+        label.className = 'message-label';
+        label.textContent = labelText;
+
+        // حباب پیام
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble';
+        
+        // محتوا
+        let content = message.content || '';
+        bubble.dataset.raw = content;
+
+        if (!content && message.role === 'model') {
+            // نشانگر تایپ
+            content = '<div class="typing-indicator"><div class="dot-container"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>';
+        } else {
+            content = this._renderContent(content);
+        }
+        bubble.innerHTML = content;
+
+        // تصویر (فقط برای کاربر)
+        if (message.role === 'user' && message.image) {
+            const imgWrapper = document.createElement('div');
+            imgWrapper.className = 'message-image-wrapper';
+            
+            const img = document.createElement('img');
+            img.src = `data:${message.image.mimeType};base64,${message.image.data}`;
+            img.className = 'message-image';
+            
+            imgWrapper.appendChild(img);
+            bubble.prepend(imgWrapper);
+        }
+
+        // ترکیب اجزا
+        contentWrapper.appendChild(label);
+        contentWrapper.appendChild(bubble);
+
+        // چیدمان بر اساس نقش (در RTL: کاربر سمت راست، مدل سمت چپ)
+        if (message.role === 'user') {
+            wrapper.appendChild(avatar);
+            wrapper.appendChild(contentWrapper);
+        } else {
+            wrapper.appendChild(contentWrapper);
+            wrapper.appendChild(avatar);
+        }
+
+        return { element: wrapper, bubble };
     }
 
     _renderContent(text) {
