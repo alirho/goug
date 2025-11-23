@@ -24,6 +24,7 @@
         import FetchHttp from './plugins/platform/fetchHttp/index.js';
         import GeminiProvider from './plugins/core/geminiProvider/index.js';
         import OpenAIProvider from './plugins/core/openaiProvider/index.js';
+        import CustomProvider from './plugins/core/customProvider/index.js';
         import WebUIPlugin from './plugins/presentation/webUI/index.js';
 
         (async () => {
@@ -38,6 +39,7 @@
                 // ۲. ثبت ارائه‌دهندگان هوش مصنوعی
                 await peik.use(new GeminiProvider());
                 await peik.use(new OpenAIProvider());
+                await peik.use(new CustomProvider());
 
                 // ۳. ثبت رابط کاربری (متصل به div#root)
                 await peik.use(new WebUIPlugin('root'));
