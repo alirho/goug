@@ -1704,3 +1704,31 @@ localhost:3000
     - پیکربندی (endpoint, model, apiKey اختیاری)
     - تست اتصال
     - مثال با Ollama
+
+### پرامپت ۱۴۲
+می‌خوام برای افزونه webUI سندهای زیر را بنویسی:
+1. سند `plugins/presentation/webUI/README.md`
+    - معرفی افزونه
+    - ویژگی‌ها
+    - نحوه نصب
+    - پیکربندی (rootElement)
+    - سفارشی‌سازی (CSS Variables)
+    - ساختار کامپوننت‌ها
+    - نحوه توسعه UI سفارشی
+    - مثال استفاده
+2. سند `plugins/presentation/webUI/docs/components.md`
+    - معماری کامپوننتی
+    - توضیح هر کامپوننت:
+      - Sidebar
+      - MessageList
+      - InputArea
+      - SettingsModal
+      - LightboxManager
+    - UIManager و نقشش
+    - نحوه سفارشی‌سازی
+3. سند `plugins/presentation/webUI/docs/theming.md`
+    - سیستم متغیرهای CSS
+    - نحوه تغییر رنگ‌ها
+    - نحوه تغییر فونت‌ها
+    - ساخت تم سفارشی
+    - مثال تم روشن/تاریک
