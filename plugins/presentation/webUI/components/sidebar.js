@@ -5,7 +5,6 @@ export default class Sidebar {
         this.container = document.getElementById('chat-list-container');
         this.activeMenu = null;
 
-        // بستن منوها با کلیک در هر جای دیگر صفحه
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.chat-actions-container')) {
                 this.closeAllMenus();
@@ -52,27 +51,24 @@ export default class Sidebar {
             </div>
         `;
 
-        // رویداد انتخاب گپ
         el.addEventListener('click', (e) => {
             if (!e.target.closest('.chat-actions-container')) {
                 this.uiManager.switchChat(chat.id);
             }
         });
 
-        // منطق منوی دراپ‌داون
         const moreBtn = el.querySelector('.more-btn');
         const menu = el.querySelector('.actions-menu');
 
         moreBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             const isHidden = menu.classList.contains('hidden');
-            this.closeAllMenus(); // بستن سایر منوها
+            this.closeAllMenus();
             if (isHidden) {
                 menu.classList.remove('hidden');
             }
         });
 
-        // رویداد ویرایش نام
         const editBtn = el.querySelector('.edit-btn');
         editBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -83,7 +79,6 @@ export default class Sidebar {
             }
         });
 
-        // رویداد حذف
         const deleteBtn = el.querySelector('.delete-btn');
         deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();

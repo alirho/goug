@@ -16,7 +16,6 @@ class SettingsModal {
         
         this.confirmHandler = null;
 
-        // --- ثبت event handlerهای bind شده برای حذف آسان ---
         this.handleSaveBound = this.handleSave.bind(this);
         this.hideBound = () => this.show(false);
         this.showBound = () => this.show(true);
@@ -29,16 +28,12 @@ class SettingsModal {
         this.bindEvents();
     }
 
-    /**
-     * ارجاع به المان‌های DOM پرکاربرد در مودال را کش می‌کند.
-     */
     cacheDOMElements() {
         this.modal = document.getElementById('settings-modal');
         this.form = document.getElementById('settings-form');
         this.cancelButton = document.getElementById('cancel-settings-button');
         this.editButton = document.getElementById('edit-settings-button');
         
-        // فیلدهای استاتیک
         this.geminiModelInput = document.getElementById('gemini-model-input');
         this.geminiKeyInput = document.getElementById('gemini-key-input');
         this.geminiKeyToggle = document.getElementById('gemini-key-toggle');
@@ -46,15 +41,12 @@ class SettingsModal {
         this.chatgptKeyInput = document.getElementById('chatgpt-key-input');
         this.chatgptKeyToggle = document.getElementById('chatgpt-key-toggle');
 
-        // بخش سفارشی
         this.addCustomProviderButton = document.getElementById('add-custom-provider-button');
         this.customProviderList = document.getElementById('custom-provider-list');
         this.customProviderTemplate = document.getElementById('custom-provider-template');
 
-        // چک‌باکس امنیتی
         this.sessionOnlyCheckbox = document.getElementById('session-only-checkbox');
         
-        // المان‌های مودال تأیید
         this.confirmationModal = document.getElementById('confirmation-modal');
         this.confirmationModalTitle = document.getElementById('confirmation-modal-title');
         this.confirmationModalBody = document.getElementById('confirmation-modal-body');
@@ -62,52 +54,24 @@ class SettingsModal {
         this.confirmationModalConfirm = document.getElementById('confirmation-modal-confirm');
     }
 
-    /**
-     * شنوندگان رویداد را به المان‌های تعاملی مودال متصل می‌کند.
-     */
     bindEvents() {
         if (this.form) this.form.addEventListener('submit', this.handleSaveBound);
         if (this.cancelButton) this.cancelButton.addEventListener('click', this.hideBound);
         if (this.editButton) this.editButton.addEventListener('click', this.showBound);
         
-        // Toggle visibility for static providers
         if (this.geminiKeyToggle) this.geminiKeyToggle.addEventListener('click', () => this.togglePasswordVisibility(this.geminiKeyInput, this.geminiKeyToggle));
         if (this.chatgptKeyToggle) this.chatgptKeyToggle.addEventListener('click', () => this.togglePasswordVisibility(this.chatgptKeyInput, this.chatgptKeyToggle));
         
-        // Dynamic custom provider events
         if (this.addCustomProviderButton) this.addCustomProviderButton.addEventListener('click', this.handleAddCustomProviderBound);
         if (this.customProviderList) {
             this.customProviderList.addEventListener('click', this.handleCustomListClickBound);
             this.customProviderList.addEventListener('input', this.handleCustomListInputBound);
         }
 
-        // Confirmation modal events
         if (this.confirmationModalCancel) this.confirmationModalCancel.addEventListener('click', this.hideConfirmationModalBound);
         if (this.confirmationModalConfirm) this.confirmationModalConfirm.addEventListener('click', this.handleConfirmBound);
     }
 
-    /**
-     * تمام شنوندگان رویداد متصل شده توسط این کامپوننت را حذف می‌کند.
-     */
-    destroy() {
-        if (this.form) this.form.removeEventListener('submit', this.handleSaveBound);
-        if (this.cancelButton) this.cancelButton.removeEventListener('click', this.hideBound);
-        if (this.editButton) this.editButton.removeEventListener('click', this.showBound);
-        
-        if (this.addCustomProviderButton) this.addCustomProviderButton.removeEventListener('click', this.handleAddCustomProviderBound);
-        if (this.customProviderList) {
-            this.customProviderList.removeEventListener('click', this.handleCustomListClickBound);
-            this.customProviderList.removeEventListener('input', this.handleCustomListInputBound);
-        }
-        
-        if (this.confirmationModalCancel) this.confirmationModalCancel.removeEventListener('click', this.hideConfirmationModalBound);
-        if (this.confirmationModalConfirm) this.confirmationModalConfirm.removeEventListener('click', this.handleConfirmBound);
-    }
-
-    /**
-     * مودال تنظیمات را نمایش یا مخفی می‌کند.
-     * @param {boolean} shouldShow - برای نمایش true و برای مخفی کردن false.
-     */
     show(shouldShow) {
         if (!this.modal) return;
         this.modal.classList.toggle('hidden', !shouldShow);
@@ -116,9 +80,6 @@ class SettingsModal {
         }
     }
 
-    /**
-     * فیلدهای فرم را با تنظیمات فعلی از موتور پر می‌کند.
-     */
     populateForm() {
         if (!this.form) return;
         this.form.reset();
@@ -133,99 +94,72 @@ class SettingsModal {
         if (this.chatgptModelInput) this.chatgptModelInput.value = providers.openai?.modelName || '';
         if (this.chatgptKeyInput) this.chatgptKeyInput.value = providers.openai?.apiKey || '';
 
-        // رندر کردن لیست ارائه‌دهندگان سفارشی
         if (this.customProviderList) {
             this.customProviderList.innerHTML = '';
             providers.custom?.forEach(p => this.renderCustomProvider(p));
         }
 
-        // انتخاب رادیوباتن فعال
         const activeRadio = this.form.querySelector(`input[name="active_provider"][value="${settings.activeProviderId}"]`);
         if (activeRadio) {
             activeRadio.checked = true;
         }
     }
 
-    /**
-     * یک المان جدید برای ارائه‌دهنده سفارشی در DOM ایجاد و رندر می‌کند.
-     * @param {Partial<CustomProviderConfig>} providerData - داده‌های ارائه‌دهنده برای پر کردن فرم.
-     * @param {boolean} [open = false] - آیا آکاردئون باید باز باشد یا خیر.
-     */
     renderCustomProvider(providerData = {}, open = false) {
-        if (!this.customProviderTemplate || !this.customProviderList) {
-            console.error("قالب یا لیست ارائه‌دهنده سفارشی یافت نشد.");
-            return;
-        }
+        if (!this.customProviderTemplate || !this.customProviderList) return;
 
         const id = providerData.id || `custom_${Date.now()}`;
         const name = providerData.name || 'پیکربندی جدید';
         
-        try {
-            const template = this.customProviderTemplate.content.cloneNode(true);
-            const detailsElement = template.querySelector('.custom-provider-item');
-            
-            if (!detailsElement) {
-                console.error("المان .custom-provider-item در قالب یافت نشد.");
-                return;
-            }
+        const template = this.customProviderTemplate.content.cloneNode(true);
+        const detailsElement = template.querySelector('.custom-provider-item');
+        
+        if (!detailsElement) return;
 
-            detailsElement.dataset.id = id;
-            if (open) detailsElement.open = true;
+        detailsElement.dataset.id = id;
+        if (open) detailsElement.open = true;
 
-            const radio = template.querySelector('input[type="radio"]');
-            if (radio) {
-                radio.value = id;
-                radio.id = `radio-${id}`;
-            }
-
-            const label = template.querySelector('label');
-            if (label) label.htmlFor = `radio-${id}`;
-            
-            const title = template.querySelector('.custom-provider-title');
-            if (title) title.textContent = name;
-
-            // پر کردن مقادیر ورودی‌ها
-            const nameInput = template.querySelector('.custom-provider-name-input');
-            if (nameInput) nameInput.value = providerData.name || '';
-            
-            const modelInput = template.querySelector('.custom-provider-model-input');
-            if (modelInput) modelInput.value = providerData.modelName || '';
-            
-            const keyInput = template.querySelector('.custom-provider-key-input');
-            if (keyInput) keyInput.value = providerData.apiKey || '';
-            
-            const endpointInput = template.querySelector('.custom-provider-endpoint-input');
-            if (endpointInput) endpointInput.value = providerData.endpointUrl || '';
-
-            this.customProviderList.appendChild(template);
-        } catch (e) {
-            console.error("خطا در رندر کردن ارائه‌دهنده سفارشی:", e);
+        const radio = template.querySelector('input[type="radio"]');
+        if (radio) {
+            radio.value = id;
+            radio.id = `radio-${id}`;
         }
+
+        const label = template.querySelector('label');
+        if (label) label.htmlFor = `radio-${id}`;
+        
+        const title = template.querySelector('.custom-provider-title');
+        if (title) title.textContent = name;
+
+        const nameInput = template.querySelector('.custom-provider-name-input');
+        if (nameInput) nameInput.value = providerData.name || '';
+        
+        const modelInput = template.querySelector('.custom-provider-model-input');
+        if (modelInput) modelInput.value = providerData.modelName || '';
+        
+        const keyInput = template.querySelector('.custom-provider-key-input');
+        if (keyInput) keyInput.value = providerData.apiKey || '';
+        
+        const endpointInput = template.querySelector('.custom-provider-endpoint-input');
+        if (endpointInput) endpointInput.value = providerData.endpointUrl || '';
+
+        this.customProviderList.appendChild(template);
     }
     
-    /**
-     * یک ارائه‌دهنده سفارشی جدید اضافه می‌کند.
-     */
     handleAddCustomProvider(e) {
         if(e) e.preventDefault();
-        this.renderCustomProvider({}, true); // با آکاردئون باز
+        this.renderCustomProvider({}, true);
     }
 
-    /**
-     * رویدادهای کلیک روی لیست ارائه‌دهندگان سفارشی را با استفاده از تفویض رویداد مدیریت می‌کند.
-     * @param {MouseEvent} e - رویداد کلیک.
-     */
     handleCustomListClick(e) {
-        // مدیریت حذف
         const deleteButton = e.target.closest('.delete-custom-provider-button');
         if (deleteButton) {
-            e.preventDefault(); // جلوگیری از باز/بسته شدن آکاردئون
+            e.preventDefault();
             const itemElement = deleteButton.closest('.custom-provider-item');
             this.handleDeleteCustomProvider(itemElement);
             return;
         }
 
-        // مدیریت تغییر وضعیت نمایش کلید
         const toggleButton = e.target.closest('.custom-provider-key-toggle');
         if (toggleButton) {
             const itemElement = toggleButton.closest('.custom-provider-item');
@@ -235,10 +169,6 @@ class SettingsModal {
         }
     }
 
-    /**
-     * رویدادهای ورودی (input) را برای به‌روزرسانی UI مدیریت می‌کند.
-     * @param {InputEvent} e - رویداد ورودی.
-     */
     handleCustomListInput(e) {
         const nameInput = e.target.closest('.custom-provider-name-input');
         if (nameInput) {
@@ -248,10 +178,6 @@ class SettingsModal {
         }
     }
     
-    /**
-     * فرآیند حذف یک ارائه‌دهنده سفارشی را مدیریت می‌کند.
-     * @param {HTMLElement} itemElement - المان DOM آیتم سفارشی.
-     */
     handleDeleteCustomProvider(itemElement) {
         if (!itemElement) return;
         const titleEl = itemElement.querySelector('.custom-provider-title');
@@ -268,17 +194,11 @@ class SettingsModal {
         });
     }
 
-    /**
-     * ارسال فرم برای ذخیره تنظیمات را مدیریت می‌کند.
-     * @param {Event} e - رویداد submit.
-     */
     async handleSave(e) {
         e.preventDefault();
         
         const settings = this.getSettingsFromForm();
-        if (!settings) {
-            return; // اعتبارسنجی ناموفق بود
-        }
+        if (!settings) return;
         
         if (this.sessionOnlyCheckbox && this.sessionOnlyCheckbox.checked) {
             this.peik.settings = settings;
@@ -289,14 +209,9 @@ class SettingsModal {
         }
     }
     
-    /**
-     * مقادیر ورودی را از فرم خوانده و یک آبجکت تنظیمات می‌سازد.
-     * @returns {Settings|null} - آبجکت تنظیمات یا null در صورت شکست اعتبارسنجی.
-     */
     getSettingsFromForm() {
         if (!this.form) return null;
 
-        // ۱. ساختار پایه تنظیمات را ایجاد کن و تمام داده‌ها را جمع‌آوری کن
         const newSettings = {
             activeProviderId: null,
             providers: {
@@ -318,7 +233,6 @@ class SettingsModal {
             }
         };
 
-        // ۲. اعتبارسنجی نام‌های منحصر به فرد برای ارائه‌دهندگان سفارشی
         const customNames = newSettings.providers.custom.map(p => p.name);
         if (customNames.some(n => !n)) {
             alert('هر پیکربندی سفارشی باید یک نام داشته باشد.');
@@ -329,21 +243,15 @@ class SettingsModal {
             return null;
         }
 
-        // ۳. تعیین و اعتبارسنجی ارائه‌دهنده فعال
         const activeRadio = this.form.querySelector('input[name="active_provider"]:checked');
         if (!activeRadio) {
-            // اگر تنظیمات قبلی معتبر باشد (مثلاً دیفالت) و کاربر تغییری نداده باشد
             if (this.peik.config && this.peik.config.defaultProvider && !this.peik.settings.activeProviderId) {
-                 // اینجا می‌توانیم فرض کنیم که کاربر نمی‌خواهد ارائه‌دهنده‌ای را فعال کند
-                 // یا اینکه می‌خواهد همان تنظیمات پیش‌فرض بماند.
                  return newSettings;
             }
-            // اگر تنظیمات فعلی معتبر است، از همان استفاده کن
             if (this.peik.settings.activeProviderId) {
                 newSettings.activeProviderId = this.peik.settings.activeProviderId;
                 return newSettings;
             }
-
             alert('لطفاً یک ارائه‌دهنده فعال را انتخاب کنید.');
             return null;
         }
@@ -380,11 +288,6 @@ class SettingsModal {
         return newSettings;
     }
 
-    /**
-     * قابلیت مشاهده یک فیلد ورودی رمز عبور را تغییر می‌دهد.
-     * @param {HTMLInputElement} inputElement - فیلد ورودی رمز عبور.
-     * @param {HTMLButtonElement} buttonElement - دکمه تغییر وضعیت.
-     */
     togglePasswordVisibility(inputElement, buttonElement) {
         if (!inputElement || !buttonElement) return;
         const icon = buttonElement.querySelector('.material-symbols-outlined');
@@ -397,13 +300,8 @@ class SettingsModal {
         }
     }
 
-    // --- توابع کمکی برای مودال تأیید ---
-
     _handleConfirm() {
-        // فقط در صورتی این رویداد را مدیریت کن که خود مودال تنظیمات قابل مشاهده باشد.
-        if (this.modal && this.modal.classList.contains('hidden')) {
-            return;
-        }
+        if (this.modal && this.modal.classList.contains('hidden')) return;
 
         if (this.confirmHandler) {
             this.confirmHandler();
@@ -414,13 +312,12 @@ class SettingsModal {
     showConfirmationModal({ title, bodyHtml, confirmText = 'تایید', confirmClass = 'btn-primary', onConfirm }) {
         if (!this.confirmationModal) return;
         
-        if (this.confirmationModalTitle) this.confirmationModalTitle.textContent = title;
-        if (this.confirmationModalBody) this.confirmationModalBody.innerHTML = bodyHtml;
-        if (this.confirmationModalConfirm) {
-            this.confirmationModalConfirm.textContent = confirmText;
-            this.confirmationModalConfirm.className = 'btn';
-            this.confirmationModalConfirm.classList.add(confirmClass);
-        }
+        this.confirmationModalTitle.textContent = title;
+        this.confirmationModalBody.innerHTML = bodyHtml;
+        this.confirmationModalConfirm.textContent = confirmText;
+        
+        this.confirmationModalConfirm.className = 'btn';
+        this.confirmationModalConfirm.classList.add(confirmClass);
         
         this.confirmHandler = onConfirm;
         
@@ -431,7 +328,7 @@ class SettingsModal {
         if (!this.confirmationModal) return;
         this.confirmationModal.classList.add('hidden');
         this.confirmHandler = null;
-        if (this.confirmationModalBody) this.confirmationModalBody.innerHTML = '';
+        this.confirmationModalBody.innerHTML = '';
     }
 }
 

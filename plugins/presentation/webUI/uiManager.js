@@ -2,6 +2,7 @@ import Sidebar from './components/sidebar.js';
 import MessageList from './components/messageList.js';
 import InputArea from './components/inputArea.js';
 import SettingsModal from './components/settingsModal.js';
+import LightboxManager from './components/lightboxManager.js';
 import { loadTemplateWithPartials, loadTemplate } from './utils/templateLoader.js';
 
 export default class UIManager {
@@ -13,6 +14,7 @@ export default class UIManager {
         this.messageList = null;
         this.inputArea = null;
         this.settingsModal = null;
+        this.lightboxManager = null;
         
         this.activeChatListeners = {};
     }
@@ -22,8 +24,9 @@ export default class UIManager {
         
         this.cacheGlobalElements();
 
+        this.lightboxManager = new LightboxManager();
         this.sidebar = new Sidebar(this.peik, this);
-        this.messageList = new MessageList(document.getElementById('message-list'));
+        this.messageList = new MessageList(document.getElementById('message-list'), this.lightboxManager);
         this.inputArea = new InputArea(this.peik, this);
         this.settingsModal = new SettingsModal(this.peik);
 
@@ -71,6 +74,13 @@ export default class UIManager {
         this.peik.on('chat:created', (chat) => {
             this.sidebar.addChat(chat);
             this.switchChat(chat.id);
+        });
+
+        this.peik.on('chat:updated', (chat) => {
+            this.sidebar.updateChat(chat);
+            if (this.peik.activeChat && this.peik.activeChat.id === chat.id) {
+                this.updateHeader(this.peik.activeChat);
+            }
         });
 
         this.peik.on('chat:deleted', (chatId) => {

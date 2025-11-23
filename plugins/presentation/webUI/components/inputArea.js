@@ -7,12 +7,11 @@ export default class InputArea {
         this.input = document.getElementById('message-input');
         this.sendBtn = document.getElementById('send-button');
         
-        // المان‌های مربوط به تصویر
         this.attachBtn = document.getElementById('attach-file-button');
         this.fileInput = document.getElementById('file-input');
         this.previewContainer = document.getElementById('image-preview-container');
         
-        this.currentImage = null; // { data: base64, mimeType: string }
+        this.currentImage = null; 
 
         this.bindEvents();
     }
@@ -30,7 +29,6 @@ export default class InputArea {
             }
         });
 
-        // رویدادهای تصویر
         this.attachBtn?.addEventListener('click', () => {
             this.fileInput.click();
         });
@@ -51,15 +49,13 @@ export default class InputArea {
 
         const reader = new FileReader();
         reader.onload = (event) => {
-            const base64String = event.target.result; // Data URL
-            // استخراج داده خالص Base64 و نوع MIME
+            const base64String = event.target.result; 
             const mimeType = file.type;
             const data = base64String.split(',')[1];
 
             this.currentImage = { data, mimeType };
             this.showPreview(base64String);
             
-            // پاک کردن اینپوت برای امکان انتخاب مجدد همان فایل
             this.fileInput.value = '';
         };
         reader.readAsDataURL(file);
@@ -92,7 +88,6 @@ export default class InputArea {
     async sendMessage() {
         const text = this.input.value.trim();
         
-        // اگر نه متنی هست و نه تصویری، ارسال نکن
         if (!text && !this.currentImage) return;
 
         const chat = this.peik.activeChat;
@@ -101,11 +96,9 @@ export default class InputArea {
             return;
         }
 
-        // ذخیره موقت برای ارسال
         const msgText = text;
         const msgImage = this.currentImage;
 
-        // پاک‌سازی UI
         this.input.value = '';
         this.clearImage();
         
@@ -113,7 +106,6 @@ export default class InputArea {
             await chat.sendMessage(msgText, msgImage);
         } catch (err) {
             console.error(err);
-            // بازگرداندن متن در صورت خطا (اختیاری)
             this.input.value = msgText;
         }
     }

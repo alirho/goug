@@ -1,8 +1,9 @@
 import markdownService from '../utils/markdownService.js';
 
 export default class MessageList {
-    constructor(container) {
+    constructor(container, lightboxManager) {
         this.container = container;
+        this.lightboxManager = lightboxManager;
     }
 
     clear() {
@@ -40,12 +41,10 @@ export default class MessageList {
             bubble.innerHTML = ''; 
         }
 
-        // به‌روزرسانی متن
         const contentDiv = bubble.querySelector('.content-text') || bubble;
         if (bubble.querySelector('.content-text')) {
              bubble.querySelector('.content-text').innerHTML = this._renderContent(newRaw);
         } else {
-             // اگر ساختار هنوز ساده است (مثل اولین چانک)، بازسازی کن
              bubble.innerHTML = this._renderContent(newRaw);
         }
         
@@ -93,11 +92,17 @@ export default class MessageList {
             img.src = `data:${message.image.mimeType};base64,${message.image.data}`;
             img.className = 'message-image';
             
+            if (this.lightboxManager) {
+                img.style.cursor = 'zoom-in';
+                img.addEventListener('click', () => {
+                    this.lightboxManager.show(img.src);
+                });
+            }
+
             imgWrapper.appendChild(img);
             bubble.prepend(imgWrapper);
         }
 
-        // اضافه کردن دکمه رونوشت (Copy)
         const copyBtn = document.createElement('button');
         copyBtn.className = 'copy-button';
         copyBtn.title = 'رونوشت پیام';
@@ -121,11 +126,8 @@ export default class MessageList {
             }
         });
 
-        // ترکیب اجزا
         contentWrapper.appendChild(label);
         contentWrapper.appendChild(bubble);
-        
-        // دکمه کپی را به انتهای کانتینر محتوا اضافه می‌کنیم (زیر حباب)
         contentWrapper.appendChild(copyBtn);
 
         if (message.role === 'user') {
