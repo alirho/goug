@@ -1489,3 +1489,17 @@ Uncaught (in promise) TypeError: this.peik.getModelDisplayInfo is not a function
 
 ### پرامپت ۱۲۳
 پیام‌ها مدل هوش در حباب مخصوص به خودش نمایش داده نمی‌شه و بدون هیچ استایلی در زیر پیام کاربر (سمت راست) نمایش داده می‌شه.
+
+### پرامپت ۱۲۵
+در صفحه مدیریت کلیدها، در بخش مدل سفارشی دکمه «افزودن» کار نمی‌کنه.
+
+### پرامپت ۱۲۶
+حالا در کنسول خطای زیر نمایش داده می‌شه:
+
+```js
+Uncaught (in promise) TypeError: this.engine.saveSettings is not a function
+    handleSave http://localhost:3000/plugins/presentation/webUI/components/settingsModal.js:288
+```
+
+### پرامپت ۱۲۷
+مشکل اصلی در افزونه webUI است که از نام‌گذاری‌های قدیمی استفاده می‌کنه. باید فایل `plugins/presentation/webUI/components/settingsModal.js` را با ساختار جدید هماهنگ کنی.
