@@ -5,14 +5,16 @@ export default class MessageList {
         this.container = container;
         this.lightboxManager = lightboxManager;
 
-        // شروع بارگذاری سرویس مارک‌داون
+        // Start loading markdown service
         markdownService.load().then(() => {
             this.rerenderUnprocessedMessages();
         });
     }
 
     clear() {
-        this.container.innerHTML = '';
+        if (this.container) {
+            this.container.innerHTML = '';
+        }
     }
 
     renderHistory(messages) {
@@ -23,7 +25,7 @@ export default class MessageList {
     }
 
     appendMessage(message) {
-        if (this.container.querySelector(`[data-id="${message.id}"]`)) return;
+        if (!this.container || this.container.querySelector(`[data-id="${message.id}"]`)) return;
 
         const { element } = this._createMessageElement(message);
         this.container.appendChild(element);
@@ -31,6 +33,8 @@ export default class MessageList {
     }
 
     appendChunk(messageId, chunk) {
+        if (!this.container) return;
+        
         let el = this.container.querySelector(`[data-id="${messageId}"]`);
         if (!el) {
             this.appendMessage({ id: messageId, role: 'model', content: '' });
@@ -157,7 +161,7 @@ export default class MessageList {
     }
 
     rerenderUnprocessedMessages() {
-        if (!markdownService.isLoaded()) return;
+        if (!markdownService.isLoaded() || !this.container) return;
 
         const bubbles = this.container.querySelectorAll('[data-needs-markdown="true"]');
         bubbles.forEach(bubble => {
@@ -171,17 +175,24 @@ export default class MessageList {
     }
 
     scrollToBottom() {
-        if (this.container.parentElement) {
+        if (this.container && this.container.parentElement) {
             this.container.parentElement.scrollTop = this.container.parentElement.scrollHeight;
         }
     }
 
     displayTemporaryError(msg) {
+        if (!this.container) return;
         const el = document.createElement('div');
         el.className = 'system-message-wrapper';
         el.innerHTML = `<div class="system-message-bubble error">${msg}</div>`;
         this.container.appendChild(el);
         this.scrollToBottom();
         setTimeout(() => el.remove(), 5000);
+    }
+
+    destroy() {
+        this.clear();
+        this.container = null;
+        this.lightboxManager = null;
     }
 }

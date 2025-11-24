@@ -13,29 +13,40 @@ export default class InputArea {
         
         this.currentImage = null; 
 
+        // Bind handlers
+        this.handleSubmit = this.handleSubmit.bind(this);
+        this.handleKeyDown = this.handleKeyDown.bind(this);
+        this.handleAttachClick = this.handleAttachClick.bind(this);
+        this.handleFileChange = this.handleFileChange.bind(this);
+
         this.bindEvents();
     }
 
     bindEvents() {
-        this.form?.addEventListener('submit', (e) => {
+        if (this.form) this.form.addEventListener('submit', this.handleSubmit);
+        if (this.input) this.input.addEventListener('keydown', this.handleKeyDown);
+        if (this.attachBtn) this.attachBtn.addEventListener('click', this.handleAttachClick);
+        if (this.fileInput) this.fileInput.addEventListener('change', this.handleFileChange);
+    }
+
+    handleSubmit(e) {
+        e.preventDefault();
+        this.sendMessage();
+    }
+
+    handleKeyDown(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             this.sendMessage();
-        });
-        
-        this.input?.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                this.sendMessage();
-            }
-        });
+        }
+    }
 
-        this.attachBtn?.addEventListener('click', () => {
-            this.fileInput.click();
-        });
+    handleAttachClick() {
+        if (this.fileInput) this.fileInput.click();
+    }
 
-        this.fileInput?.addEventListener('change', (e) => {
-            this.handleFileSelect(e);
-        });
+    handleFileChange(e) {
+        this.handleFileSelect(e);
     }
 
     handleFileSelect(e) {
@@ -90,13 +101,17 @@ export default class InputArea {
         
         if (!text && !this.currentImage) return;
 
-        // استفاده از activeChat موجود در UIManager
-        const chat = this.uiManager.activeChat;
+        // Use activeChatId from UIManager
+        const chatId = this.uiManager.activeChatId;
         
-        if (!chat) {
+        if (!chatId) {
             alert('لطفاً ابتدا یک گپ ایجاد کنید.');
             return;
         }
+
+        // Fetch the chat instance from core
+        const chat = await this.peik.getChat(chatId);
+        if (!chat) return;
 
         const msgText = text;
         const msgImage = this.currentImage;
@@ -122,5 +137,21 @@ export default class InputArea {
         if (this.attachBtn) {
             this.attachBtn.disabled = isLoading;
         }
+    }
+
+    destroy() {
+        if (this.form) this.form.removeEventListener('submit', this.handleSubmit);
+        if (this.input) this.input.removeEventListener('keydown', this.handleKeyDown);
+        if (this.attachBtn) this.attachBtn.removeEventListener('click', this.handleAttachClick);
+        if (this.fileInput) this.fileInput.removeEventListener('change', this.handleFileChange);
+
+        this.form = null;
+        this.input = null;
+        this.sendBtn = null;
+        this.attachBtn = null;
+        this.fileInput = null;
+        this.previewContainer = null;
+        this.peik = null;
+        this.uiManager = null;
     }
 }

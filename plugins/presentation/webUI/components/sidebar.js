@@ -5,14 +5,87 @@ export default class Sidebar {
         this.container = document.getElementById('chat-list-container');
         this.activeMenu = null;
 
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.chat-actions-container')) {
+        // Bind methods for event listeners
+        this.handleDocumentClick = this.handleDocumentClick.bind(this);
+        this.handleContainerClick = this.handleContainerClick.bind(this);
+
+        this.bindEvents();
+    }
+
+    bindEvents() {
+        document.addEventListener('click', this.handleDocumentClick);
+        if (this.container) {
+            this.container.addEventListener('click', this.handleContainerClick);
+        }
+    }
+
+    handleDocumentClick(e) {
+        if (!e.target.closest('.chat-actions-container')) {
+            this.closeAllMenus();
+        }
+    }
+
+    handleContainerClick(e) {
+        // Delegate click events
+        const target = e.target;
+
+        // 1. Click on chat item (to switch)
+        const chatItem = target.closest('.chat-list-item');
+        if (chatItem && !target.closest('.chat-actions-container')) {
+            const chatId = chatItem.dataset.id;
+            this.uiManager.switchChat(chatId);
+            return;
+        }
+
+        // 2. Menu button (three dots)
+        const moreBtn = target.closest('.more-btn');
+        if (moreBtn) {
+            e.stopPropagation();
+            const menu = moreBtn.nextElementSibling; // Assuming HTML structure
+            if (menu) {
+                const isHidden = menu.classList.contains('hidden');
                 this.closeAllMenus();
+                if (isHidden) {
+                    menu.classList.remove('hidden');
+                }
             }
-        });
+            return;
+        }
+
+        // 3. Edit button
+        const editBtn = target.closest('.edit-btn');
+        if (editBtn) {
+            e.stopPropagation();
+            this.closeAllMenus();
+            const chatItem = editBtn.closest('.chat-list-item');
+            const chatId = chatItem.dataset.id;
+            const currentTitle = chatItem.querySelector('.chat-title').textContent;
+            
+            const newTitle = prompt('نام جدید گپ را وارد کنید:', currentTitle);
+            if (newTitle && newTitle.trim() !== '') {
+                this.peik.renameChat(chatId, newTitle.trim());
+            }
+            return;
+        }
+
+        // 4. Delete button
+        const deleteBtn = target.closest('.delete-btn');
+        if (deleteBtn) {
+            e.stopPropagation();
+            this.closeAllMenus();
+            const chatItem = deleteBtn.closest('.chat-list-item');
+            const chatId = chatItem.dataset.id;
+            const currentTitle = chatItem.querySelector('.chat-title').textContent;
+
+            if (confirm(`آیا از حذف گپ «${currentTitle}» مطمئن هستید؟`)) {
+                this.peik.deleteChat(chatId);
+            }
+            return;
+        }
     }
 
     render(chats, activeId) {
+        if (!this.container) return;
         this.container.innerHTML = '';
         const chatArray = Array.isArray(chats) ? chats : [];
         const sortedChats = [...chatArray].sort((a, b) => b.updatedAt - a.updatedAt);
@@ -51,43 +124,6 @@ export default class Sidebar {
             </div>
         `;
 
-        el.addEventListener('click', (e) => {
-            if (!e.target.closest('.chat-actions-container')) {
-                this.uiManager.switchChat(chat.id);
-            }
-        });
-
-        const moreBtn = el.querySelector('.more-btn');
-        const menu = el.querySelector('.actions-menu');
-
-        moreBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const isHidden = menu.classList.contains('hidden');
-            this.closeAllMenus();
-            if (isHidden) {
-                menu.classList.remove('hidden');
-            }
-        });
-
-        const editBtn = el.querySelector('.edit-btn');
-        editBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.closeAllMenus();
-            const newTitle = prompt('نام جدید گپ را وارد کنید:', chat.title);
-            if (newTitle && newTitle.trim() !== '') {
-                this.peik.renameChat(chat.id, newTitle.trim());
-            }
-        });
-
-        const deleteBtn = el.querySelector('.delete-btn');
-        deleteBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.closeAllMenus();
-            if (confirm(`آیا از حذف گپ «${chat.title}» مطمئن هستید؟`)) {
-                this.peik.deleteChat(chat.id);
-            }
-        });
-
         this.container.prepend(el);
     }
 
@@ -97,19 +133,33 @@ export default class Sidebar {
     }
 
     removeChat(chatId) {
+        if (!this.container) return;
         const el = this.container.querySelector(`[data-id="${chatId}"]`);
         if (el) el.remove();
     }
 
     setActive(chatId) {
+        if (!this.container) return;
         this.container.querySelectorAll('.chat-list-item').forEach(el => {
             el.classList.toggle('active', el.dataset.id === chatId);
         });
     }
 
     closeAllMenus() {
+        if (!this.container) return;
         this.container.querySelectorAll('.actions-menu').forEach(menu => {
             menu.classList.add('hidden');
         });
+    }
+
+    destroy() {
+        document.removeEventListener('click', this.handleDocumentClick);
+        if (this.container) {
+            this.container.removeEventListener('click', this.handleContainerClick);
+            this.container.innerHTML = '';
+        }
+        this.container = null;
+        this.peik = null;
+        this.uiManager = null;
     }
 }

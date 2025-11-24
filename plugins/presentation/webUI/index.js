@@ -9,7 +9,7 @@ export default class WebUIPlugin extends Plugin {
             category: 'presentation',
             description: 'رابط کاربری وب استاندارد',
             author: 'Peik Team',
-            dependencies: []
+            dependencies: [] 
         };
     }
 
@@ -30,7 +30,25 @@ export default class WebUIPlugin extends Plugin {
         console.log('WebUI فعال شد.');
     }
 
+    async deactivate() {
+        if (this.uiManager) {
+            this.uiManager.destroy();
+            this.uiManager = null;
+        }
+
+        // Remove CSS link
+        const styleLink = document.querySelector('link[href*="webUI/styles/main.css"]');
+        if (styleLink) {
+            styleLink.remove();
+        }
+        
+        console.log('WebUI غیرفعال شد.');
+    }
+
     _loadStyles() {
+        // Prevent duplicate loading
+        if (document.querySelector('link[href*="webUI/styles/main.css"]')) return;
+
         const link = document.createElement('link');
         link.rel = 'stylesheet';
         link.href = 'plugins/presentation/webUI/styles/main.css'; 
