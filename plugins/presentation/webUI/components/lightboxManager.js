@@ -5,6 +5,7 @@ export default class LightboxManager extends Component {
         super(peik, uiManager);
         this.hideBound = this.hide.bind(this);
         this.handleKeyDownBound = this.handleKeyDown.bind(this);
+        this.handleLightboxClick = this.handleLightboxClick.bind(this);
     }
 
     async init() {
@@ -19,17 +20,19 @@ export default class LightboxManager extends Component {
     bindEvents() {
         if (!this.dom.lightbox) return;
 
-        this.dom.lightbox.addEventListener('click', (e) => {
-            if (e.target === this.dom.lightbox) {
-                this.hide();
-            }
-        });
+        this.dom.lightbox.addEventListener('click', this.handleLightboxClick);
 
         if (this.dom.closeBtn) {
             this.dom.closeBtn.addEventListener('click', this.hideBound);
         }
 
         document.addEventListener('keydown', this.handleKeyDownBound);
+    }
+
+    handleLightboxClick(e) {
+        if (e.target === this.dom.lightbox) {
+            this.hide();
+        }
     }
 
     handleKeyDown(e) {
@@ -54,6 +57,9 @@ export default class LightboxManager extends Component {
 
     destroy() {
         document.removeEventListener('keydown', this.handleKeyDownBound);
+        if (this.dom.lightbox) {
+            this.dom.lightbox.removeEventListener('click', this.handleLightboxClick);
+        }
         if (this.dom.closeBtn) {
             this.dom.closeBtn.removeEventListener('click', this.hideBound);
         }

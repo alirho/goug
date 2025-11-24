@@ -2014,4 +2014,25 @@ transaction.onabort = () => reject(new StorageError('Transaction was aborted'));
 
 **نکته:** سازگاری با نسخه قبل مهم نیست، می‌تونی هر تغییری لازمه بدی.
 
-> پرامپت‌های ۱۴۸ تا ۱۵۵ از مدل sonnet4.5 به عنوان مشاور فنی گرفته شده است.
+### پرامپت ۱۵۶
+دو مشکل Memory Leak در کدهای Component ها را برطرف کن:
+1. در: `lightboxManager.js`، در متد `bindEvents`، یک inline function برای click روی lightbox استفاده شده که نمی‌توان آن را در `destroy` حذف کرد.
+    - یک متد bound به نام `handleLightboxClick` بساز
+    - در `constructor` آن را bind کن
+    - در `bindEvents` از این bound method استفاده کن
+    - در `destroy` آن را remove کن
+2. در `settingsModal.js`: متد `destroy` فقط 4 listener از 16 listener را حذف می‌کند. بقیه با کامنت نوشته شده. تمام listener های زیر را در `destroy` اضافه کن:
+    - `geminiKeyToggle` - click - `handleGeminiToggle`
+    - `chatgptKeyToggle` - click - `handleChatgptToggle`
+    - `geminiKeyInput` - input - `handleStaticInputValidation`
+    - `geminiModelInput` - input - `handleStaticInputValidation`
+    - `chatgptKeyInput` - input - `handleStaticInputValidation`
+    - `chatgptModelInput` - input - `handleStaticInputValidation`
+    - `addCustomProviderButton` - click - `handleAddCustomProvider`
+    - `customProviderList` - click - `handleCustomListClick`
+    - `customProviderList` - input - `handleCustomListInput`
+    - `customProviderList` - input - `handleCustomInputValidation`
+    - `confirmationModalCancel` - click - `hideConfirmationModal`
+    - `confirmationModalConfirm` - click - `handleConfirm`
+
+> پرامپت‌های ۱۴۸ تا ۱۵۶ از مدل sonnet4.5 به عنوان مشاور فنی گرفته شده است.

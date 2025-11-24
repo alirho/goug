@@ -312,8 +312,25 @@ export default class SettingsModal extends Component {
         if (this.cancelButton) this.cancelButton.removeEventListener('click', this.hide);
         if (this.editButton) this.editButton.removeEventListener('click', this.show);
         
+        if (this.geminiKeyToggle) this.geminiKeyToggle.removeEventListener('click', this.handleGeminiToggle);
+        if (this.chatgptKeyToggle) this.chatgptKeyToggle.removeEventListener('click', this.handleChatgptToggle);
+        
+        if (this.geminiKeyInput) this.geminiKeyInput.removeEventListener('input', this.handleStaticInputValidation);
+        if (this.geminiModelInput) this.geminiModelInput.removeEventListener('input', this.handleStaticInputValidation);
+        if (this.chatgptKeyInput) this.chatgptKeyInput.removeEventListener('input', this.handleStaticInputValidation);
+        if (this.chatgptModelInput) this.chatgptModelInput.removeEventListener('input', this.handleStaticInputValidation);
+
+        if (this.addCustomProviderButton) this.addCustomProviderButton.removeEventListener('click', this.handleAddCustomProvider);
+        if (this.customProviderList) {
+            this.customProviderList.removeEventListener('click', this.handleCustomListClick);
+            this.customProviderList.removeEventListener('input', this.handleCustomListInput);
+            this.customProviderList.removeEventListener('input', this.handleCustomInputValidation);
+        }
+
+        if (this.confirmationModalCancel) this.confirmationModalCancel.removeEventListener('click', this.hideConfirmationModal);
+        if (this.confirmationModalConfirm) this.confirmationModalConfirm.removeEventListener('click', this.handleConfirm);
+
         this.peik.off('settings:updated', this.handleSettingsUpdated);
-        // ... remove other listeners
         
         this.modal = null;
     }
