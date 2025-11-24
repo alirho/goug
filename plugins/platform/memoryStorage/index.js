@@ -5,16 +5,14 @@ import { Plugin, Serializer } from '../../../core/src/index.js';
  * داده‌ها را فقط در طول عمر برنامه نگه می‌دارد و با رفرش صفحه پاک می‌شوند.
  */
 export default class MemoryStoragePlugin extends Plugin {
-    static get metadata() {
-        return {
-            name: 'memory-storage',
-            version: '1.0.0',
-            category: 'storage',
-            description: 'ذخیره‌سازی موقت در حافظه RAM (مناسب برای تست)',
-            author: 'Peik Team',
-            dependencies: []
-        };
-    }
+    static metadata = {
+        name: 'memory-storage',
+        version: '1.0.0',
+        category: 'storage',
+        description: 'ذخیره‌سازی موقت در حافظه RAM (مناسب برای تست)',
+        author: 'Peik Team',
+        dependencies: []
+    };
 
     constructor() {
         super();
@@ -66,10 +64,13 @@ export default class MemoryStoragePlugin extends Plugin {
      */
     async getAllChats() {
         const allChats = Array.from(this.chats.values()).map(chat => {
-            const chatCopy = Serializer.clone(chat);
-            // طبق قرارداد StorageInterface، لیست نباید شامل پیام‌های سنگین باشد
-            delete chatCopy.messages;
-            return chatCopy;
+            return {
+                id: chat.id,
+                title: chat.title,
+                createdAt: chat.createdAt,
+                updatedAt: chat.updatedAt,
+                modelInfo: chat.modelInfo
+            };
         });
 
         // مرتب‌سازی نزولی بر اساس تاریخ به‌روزرسانی (جدیدترین اول)

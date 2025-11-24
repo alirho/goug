@@ -5,16 +5,14 @@ import { Plugin } from '../../../core/src/index.js';
  * این افزونه از HttpClientInterface پیروی می‌کند و برای محیط‌های مرورگر و Node.js 18+ مناسب است.
  */
 export default class FetchHttpPlugin extends Plugin {
-    static get metadata() {
-        return {
-            name: 'fetch-http',
-            version: '1.0.0',
-            category: 'network',
-            description: 'کلاینت شبکه استاندارد با استفاده از Fetch API',
-            author: 'Peik Team',
-            dependencies: []
-        };
-    }
+    static metadata = {
+        name: 'fetch-http',
+        version: '1.0.0',
+        category: 'network',
+        description: 'کلاینت شبکه استاندارد با استفاده از Fetch API',
+        author: 'Peik Team',
+        dependencies: []
+    };
 
     /**
      * انجام یک درخواست HTTP ساده (غیر استریم).
@@ -54,7 +52,9 @@ export default class FetchHttpPlugin extends Plugin {
         } catch (error) {
             // اگر خطا از نوع HTTP نبود (مثلاً قطعی شبکه)
             if (!error.statusCode) {
-                error.message = `Network Error: ${error.message}`;
+                const netError = new Error(`Network Error: ${error.message}`);
+                netError.code = 'NETWORK_ERROR';
+                throw netError;
             }
             throw error;
         }
@@ -112,6 +112,10 @@ export default class FetchHttpPlugin extends Plugin {
                 // دیکود کردن باینری به متن
                 const chunk = decoder.decode(value, { stream: true });
                 buffer += chunk;
+
+                if (buffer.length > 100000) {
+                    throw new Error('Stream line too long');
+                }
 
                 // پردازش خط به خط (مناسب برای SSE)
                 const lines = buffer.split('\n');

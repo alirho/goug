@@ -1846,3 +1846,24 @@ localhost:3000
 3. بهبود Error Handling در Stream: در متد `_processStreamLine`:
     - به جای `console.warn`، از `console.error` استفاده کن
     - یک کامنت اضافه کن که توضیح بده چرا خطا را نادیده می‌گیریم (اگر دلیل خاصی دارد)
+
+### پرامپت ۱۴۹
+چهار تغییر زیر را در فایل‌های `fetchHttp/index.js` و `memoryStorage/index.js` انجام بده:
+1. اصلاح metadata (هر دو فایل): `static get metadata()` را به `static metadata = { ... }` تبدیل کن. محتوا همان باشد.
+2. بهبود getAllChats در MemoryStorage: به جای `delete chatCopy.messages`، فقط فیلدهای لازم را برگردان:
+```
+return {
+    id: chat.id,
+    title: chat.title,
+    createdAt: chat.createdAt,
+    updatedAt: chat.updatedAt,
+    modelInfo: chat.modelInfo
+}
+```
+3. بهبود Error در FetchHttp - متد request: در بلوک catch، وقتی `error.statusCode` وجود ندارد:
+    - یک Error جدید بساز با message: `Network Error: ${error.message}`
+    - به آن property اضافه کن: `code = 'NETWORK_ERROR'`
+    - Error جدید را throw کن
+4. محدود کردن Buffer در FetchHttp - متد streamRequest: بعد از خط `buffer += chunk`:
+    - چک کن اگر `buffer.length > 100000`:
+      - throw کن Error با message: `'Stream line too long'`
