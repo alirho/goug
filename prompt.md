@@ -1967,4 +1967,38 @@ transaction.onabort = () => reject(new StorageError('Transaction was aborted'));
    - `this.unprocessedMessages.clear()` را فراخوانی کن
    - `this.unprocessedMessages` را `null` کن
 
-> پرامپت‌های ۱۴۲ تا ۱۴۵ از مدل sonnet4.5 به عنوان مشاور فنی گرفته شده است.
+### پرامپت ۱۵۴
+کاربر می‌تونه کل فرم را پر کنه، اما تا زمان کلیک روی "ذخیره"، از خطاها مطلع نمی‌شه. این UX بدیه.
+1. اضافه کردن CSS Class برای خطا، در فایل CSS مربوطه (یا inline در JS)، یک class به نام `invalid` برای input ها تعریف کن که border قرمز نمایش بده.
+2. اضافه کردن Event Listener های Real-time، در متد `bindEvents`:
+    - برای `geminiKeyInput` و `geminiModelInput`:
+       - یک event listener برای `input` اضافه کن
+       - وقتی کاربر تایپ می‌کند، چک کن که مقدار خالی نباشد
+       - اگر خالی بود، class `invalid` اضافه کن
+       - اگر پر بود، class `invalid` را حذف کن
+    - برای `chatgptKeyInput` و `chatgptModelInput`:
+       - همین کار را تکرار کن
+    - برای `customProviderList`:
+       - یک event listener برای `input` اضافه کن (از event delegation استفاده کن)
+       - اگر input از نوع name باشد:
+         - چک کن که خالی نباشد
+         - چک کن که تکراری نباشد (با name های دیگر custom provider ها)
+         - اگر مشکلی بود، class `invalid` اضافه کن
+       - اگر input از نوع endpoint باشد:
+         - چک کن که URL معتبر باشد (با `try { new URL(value) }`)
+         - اگر نامعتبر بود، class `invalid` اضافه کن
+3. اضافه کردن متدهای کمکی
+    - `validateField(inputElement, validatorFn)`:
+       - یک function بگیرد که true/false برمی‌گرداند
+       - اگر validator برابر false شد، class `invalid` اضافه کند
+       - اگر برابر true شد، class `invalid` را حذف کند
+       - نتیجه را return کند (true/false)
+    - `validateCustomProviderName(inputElement)`:
+       - نام را از input بگیرد
+       - تمام name های دیگر را پیدا کند
+       - چک کند که خالی یا تکراری نباشد
+       - class `invalid` را مدیریت کند
+4. Cleanup در destroy، در متد `destroy`:
+    - تمام event listener های اضافه شده را remove کن (bound method ها را استفاده کن)
+
+> پرامپت‌های ۱۴۸ تا ۱۵۴ از مدل sonnet4.5 به عنوان مشاور فنی گرفته شده است.

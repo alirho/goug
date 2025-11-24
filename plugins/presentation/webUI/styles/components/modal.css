@@ -177,6 +177,14 @@ html.dark .form-input {
     border-color: var(--color-primary);
     box-shadow: 0 0 0 2px rgba(19, 91, 236, 0.5);
 }
+/* Invalid State */
+.form-input.invalid {
+    border-color: #ef4444 !important;
+}
+.form-input.invalid:focus {
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.5);
+}
+
 .form-input.text-left {
     text-align: left;
     direction: ltr;

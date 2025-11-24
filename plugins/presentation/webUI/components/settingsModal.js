@@ -23,6 +23,11 @@ class SettingsModal {
         this.handleAddCustomProviderBound = this.handleAddCustomProvider.bind(this);
         this.handleCustomListClickBound = this.handleCustomListClick.bind(this);
         this.handleCustomListInputBound = this.handleCustomListInput.bind(this);
+        
+        // Validation handlers
+        this.handleStaticInputValidationBound = this.handleStaticInputValidation.bind(this);
+        this.handleCustomInputValidationBound = this.handleCustomInputValidation.bind(this);
+
         this.hideConfirmationModalBound = this.hideConfirmationModal.bind(this);
         this.handleConfirmBound = this._handleConfirm.bind(this);
         
@@ -77,10 +82,18 @@ class SettingsModal {
         if (this.geminiKeyToggle) this.geminiKeyToggle.addEventListener('click', this.handleGeminiToggle);
         if (this.chatgptKeyToggle) this.chatgptKeyToggle.addEventListener('click', this.handleChatgptToggle);
         
+        // Real-time Validation for Static Fields
+        if (this.geminiKeyInput) this.geminiKeyInput.addEventListener('input', this.handleStaticInputValidationBound);
+        if (this.geminiModelInput) this.geminiModelInput.addEventListener('input', this.handleStaticInputValidationBound);
+        if (this.chatgptKeyInput) this.chatgptKeyInput.addEventListener('input', this.handleStaticInputValidationBound);
+        if (this.chatgptModelInput) this.chatgptModelInput.addEventListener('input', this.handleStaticInputValidationBound);
+
         if (this.addCustomProviderButton) this.addCustomProviderButton.addEventListener('click', this.handleAddCustomProviderBound);
         if (this.customProviderList) {
             this.customProviderList.addEventListener('click', this.handleCustomListClickBound);
             this.customProviderList.addEventListener('input', this.handleCustomListInputBound);
+            // Real-time validation for dynamic fields via delegation
+            this.customProviderList.addEventListener('input', this.handleCustomInputValidationBound);
         }
 
         if (this.confirmationModalCancel) this.confirmationModalCancel.addEventListener('click', this.hideConfirmationModalBound);
@@ -98,10 +111,17 @@ class SettingsModal {
         if (this.geminiKeyToggle) this.geminiKeyToggle.removeEventListener('click', this.handleGeminiToggle);
         if (this.chatgptKeyToggle) this.chatgptKeyToggle.removeEventListener('click', this.handleChatgptToggle);
         
+        // Remove validation listeners
+        if (this.geminiKeyInput) this.geminiKeyInput.removeEventListener('input', this.handleStaticInputValidationBound);
+        if (this.geminiModelInput) this.geminiModelInput.removeEventListener('input', this.handleStaticInputValidationBound);
+        if (this.chatgptKeyInput) this.chatgptKeyInput.removeEventListener('input', this.handleStaticInputValidationBound);
+        if (this.chatgptModelInput) this.chatgptModelInput.removeEventListener('input', this.handleStaticInputValidationBound);
+
         if (this.addCustomProviderButton) this.addCustomProviderButton.removeEventListener('click', this.handleAddCustomProviderBound);
         if (this.customProviderList) {
             this.customProviderList.removeEventListener('click', this.handleCustomListClickBound);
             this.customProviderList.removeEventListener('input', this.handleCustomListInputBound);
+            this.customProviderList.removeEventListener('input', this.handleCustomInputValidationBound);
         }
         
         if (this.confirmationModalCancel) this.confirmationModalCancel.removeEventListener('click', this.hideConfirmationModalBound);
@@ -110,6 +130,81 @@ class SettingsModal {
         this.peik = null;
         this.modal = null;
         // Clean up references
+    }
+
+    /**
+     * Validates a generic input field.
+     * @param {HTMLElement} inputElement 
+     * @param {Function} validatorFn Returns true if valid, false otherwise.
+     * @returns {boolean}
+     */
+    validateField(inputElement, validatorFn) {
+        const isValid = validatorFn(inputElement.value);
+        if (isValid) {
+            inputElement.classList.remove('invalid');
+        } else {
+            inputElement.classList.add('invalid');
+        }
+        return isValid;
+    }
+
+    /**
+     * Validates custom provider name for uniqueness and emptiness.
+     * @param {HTMLElement} inputElement 
+     * @returns {boolean}
+     */
+    validateCustomProviderName(inputElement) {
+        const value = inputElement.value.trim();
+        
+        // Empty check
+        if (!value) {
+            inputElement.classList.add('invalid');
+            return false;
+        }
+
+        // Uniqueness check
+        const allNameInputs = Array.from(this.customProviderList.querySelectorAll('.custom-provider-name-input'));
+        const otherNames = allNameInputs
+            .filter(el => el !== inputElement)
+            .map(el => el.value.trim());
+
+        if (otherNames.includes(value)) {
+            inputElement.classList.add('invalid');
+            return false;
+        }
+
+        inputElement.classList.remove('invalid');
+        return true;
+    }
+
+    /**
+     * Handler for static input validation (Gemini/OpenAI).
+     */
+    handleStaticInputValidation(e) {
+        const input = e.target;
+        this.validateField(input, (val) => val.trim().length > 0);
+    }
+
+    /**
+     * Handler for dynamic input validation (Custom Providers).
+     */
+    handleCustomInputValidation(e) {
+        const input = e.target;
+
+        if (input.classList.contains('custom-provider-name-input')) {
+            this.validateCustomProviderName(input);
+        } else if (input.classList.contains('custom-provider-endpoint-input')) {
+            this.validateField(input, (val) => {
+                try {
+                    new URL(val);
+                    return true;
+                } catch {
+                    return false;
+                }
+            });
+        } else if (input.classList.contains('custom-provider-model-input')) {
+            this.validateField(input, (val) => val.trim().length > 0);
+        }
     }
 
     /**
@@ -132,6 +227,10 @@ class SettingsModal {
         this.form.reset();
         if (this.sessionOnlyCheckbox) this.sessionOnlyCheckbox.checked = false;
         
+        // Reset validation state
+        const invalidInputs = this.form.querySelectorAll('.invalid');
+        invalidInputs.forEach(el => el.classList.remove('invalid'));
+
         const settings = this.peik.settings || { providers: {} };
         const providers = settings.providers || {};
         
