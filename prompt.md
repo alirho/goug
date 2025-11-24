@@ -1898,3 +1898,40 @@ transaction.onabort = () => reject(new StorageError('Transaction was aborted'));
     - چت‌ها را با cursor بخوان (یکی یکی)
     - از هر کدام فقط فیلدهای لازم را بردار (بدون messages)
     - دیگر نیازی به sort نیست (DB مرتب می‌کند)
+
+### پرامپت ۱۵۱
+مشکل نشت حافظه (Memory Leak) در افزونه WebUI را برطرف کن. این مشکل‌ها در فایل‌های زیر وجود دارن:
+1. اضافه کردن متد destroy به تمام Component ها `uiManager.js`، `sidebar.js`، messageList.js`، inputArea.js`، settingsModal.js`
+    - در هر فایل، یک متد به نام `destroy()` اضافه کن که این کارها را انجام دهد: 
+      - تمام event listener هایی که به `document` یا `window` اضافه شده‌اند را remove کن
+      - تمام event listener هایی که به element های DOM اضافه شده‌اند را remove کن
+      - reference های ذخیره شده به DOM element ها را `null` کن
+      - اگر Component دیگری دارد، متد `destroy()` آن را هم فراخوانی کن
+
+**نکته مهم:** برای اینکه بتوانی listener ها را remove کنی، باید از **bound method** استفاده کنی. به این صورت:
+- در `constructor`، تمام handler function ها را bind کن و در یک property ذخیره کن
+- هنگام `addEventListener`، از همان bound function استفاده کن
+- هنگام `removeEventListener`، از همان bound function استفاده کن
+2. اضافه کردن متد deactivate به WebUIPlugin: فایل  `index.js`
+    - یک متد `async deactivate()` اضافه کن که:
+      - اگر `this.uiManager` وجود دارد، متد `destroy()` آن را فراخوانی کن
+      - `this.uiManager` را `null` کن
+      - لینک CSS که در `_loadStyles` اضافه شده را پیدا و حذف کن (selector: `link[href*="webUI/styles/main.css"]`)
+3. بهبود Event Binding در UIManager: در فایل `uiManager.js` در متد `_bindActiveChatEvents`، هر بار که این متد فراخوانی می‌شود، چندین function جدید ساخته می‌شوند.
+    - در `constructor`، یک property به نام `chatEventHandlers` بساز
+    - در آن، تمام handler function های مربوط به chat event ها را bind کن و ذخیره کن:
+       - `message:sent` → متد `handleMessageSent`
+       - `chunk` → متد `handleChunk`
+       - `response:complete` → متد `handleResponseComplete`
+       - `response:receiving` → متد `handleResponseReceiving`
+       - `update` → متد `handleChatUpdate`
+       - `error` → متد `handleChatError`
+    - متدهای handler را بساز (مثلاً `handleMessageSent(msg)`) که همان کاری را انجام دهند که الان inline function ها   می‌دهند
+    - در متد `_bindActiveChatEvents`، به جای ساخت function های جدید، از `this.chatEventHandlers` استفاده کن
+    - خط `this.activeChatListeners = { ... }` را حذف کن چون دیگر لازم نیست
+4. رفع مشکل State Duplication: در فایل `uiManager.js`  `this.activeChat` یک reference کامل به Chat object ذخیره می‌کند که می‌تواند باعث مشکل شود.
+    - نام `this.activeChat` را به `this.activeChatId` تغییر بده
+    - به جای ذخیره کل object، فقط `chat.id` را ذخیره کن
+    - در جاهایی که از `this.activeChat` استفاده می‌شود:
+       - اگر فقط `id` لازم است، از `this.activeChatId` استفاده کن
+       - اگر کل object لازم است، از `await this.peik.getChat(this.activeChatId)` استفاده کن
