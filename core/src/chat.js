@@ -16,9 +16,7 @@ export default class Chat extends EventEmitter {
         this.createdAt = data.createdAt || Date.now();
         this.updatedAt = data.updatedAt || Date.now();
         
-        // وضعیت داخلی (سریال‌سازی نمی‌شود)
-        this.isSending = false;
-        this.abortController = null; // فرض بر این است که محیط AbortController دارد یا پلی‌فیل شده
+        // وضعیت داخلی (isSending و abortController) به peik.chatRuntimeStates منتقل شد
     }
 
     /**
@@ -29,12 +27,27 @@ export default class Chat extends EventEmitter {
     }
 
     /**
+     * دریافت وضعیت Runtime گپ از Map مرکزی
+     */
+    _getRuntimeState() {
+        let state = this.peik.chatRuntimeStates.get(this.id);
+        if (!state) {
+            // ایجاد وضعیت پیش‌فرض اگر وجود نداشته باشد (Safety net)
+            state = { isSending: false, abortController: null };
+            this.peik.chatRuntimeStates.set(this.id, state);
+        }
+        return state;
+    }
+
+    /**
      * ارسال پیام جدید در این گپ
      * @param {string} content متن پیام
      * @param {object} [image] تصویر اختیاری { data, mimeType }
      */
     async sendMessage(content, image = null) {
-        if (this.isSending) {
+        const runtimeState = this._getRuntimeState();
+
+        if (runtimeState.isSending) {
             throw new PeikError('یک پیام در حال ارسال است.');
         }
 
@@ -50,11 +63,16 @@ export default class Chat extends EventEmitter {
         };
         if (image) userMsg.image = image;
 
-        this.messages.push(userMsg);
-        await this.emit('message', userMsg); // UI Update
+        // انتشار رویداد قبل از افزودن
+        await this.emit('message:sending', { role: 'user', content });
 
-        // 3. پیدا کردن ارائه‌دهنده (Provider)
-        const providerPlugin = this._resolveProvider();
+        this.messages.push(userMsg);
+        
+        // انتشار رویداد پس از افزودن
+        await this.emit('message:sent', userMsg);
+
+        // 3. پیدا کردن ارائه‌دهنده (Provider) با استفاده از متد جدید Peik
+        const providerPlugin = this.peik.getProvider(this.modelInfo);
         const providerConfig = this.peik.resolveProviderConfig(this.modelInfo);
 
         if (!providerPlugin || !providerConfig) {
@@ -68,15 +86,22 @@ export default class Chat extends EventEmitter {
             content: '',
             timestamp: Date.now()
         };
+
+        // انتشار رویداد قبل از افزودن
+        await this.emit('message:sending', { role: 'model' });
+
         this.messages.push(modelMsg);
-        await this.emit('message', modelMsg);
+        
+        // انتشار رویداد پس از افزودن
+        await this.emit('message:sent', modelMsg);
 
         // 5. ارسال به Provider
-        this.isSending = true;
-        this.abortController = new AbortController(); // وابستگی محیطی استاندارد JS
+        runtimeState.isSending = true;
+        runtimeState.abortController = new AbortController();
 
         try {
-            await this.emit('sending', { chatId: this.id });
+            // تغییر نام رویداد از sending به response:receiving
+            await this.emit('response:receiving', { chatId: this.id });
             
             let fullResponse = '';
             
@@ -90,7 +115,7 @@ export default class Chat extends EventEmitter {
                     fullResponse += chunk;
                     this.emit('chunk', { messageId: modelMsg.id, chunk });
                 },
-                { signal: this.abortController.signal }
+                { signal: runtimeState.abortController.signal }
             );
 
             // به‌روزرسانی محتوای نهایی
@@ -113,27 +138,19 @@ export default class Chat extends EventEmitter {
                 await this.emit('message:removed', modelMsg.id);
             }
         } finally {
-            this.isSending = false;
-            this.abortController = null;
+            runtimeState.isSending = false;
+            runtimeState.abortController = null;
         }
-    }
-
-    /**
-     * پیدا کردن افزونه ارائه‌دهنده مربوط به این گپ
-     */
-    _resolveProvider() {
-        const providerName = this.modelInfo.provider;
-        const plugins = this.peik.pluginManager.getPluginsByCategory('provider');
-        return plugins.find(p => p.constructor.metadata.name === providerName);
     }
 
     /**
      * لغو درخواست جاری
      */
     cancel() {
-        if (this.isSending && this.abortController) {
-            this.abortController.abort();
-            this.isSending = false;
+        const runtimeState = this._getRuntimeState();
+        if (runtimeState.isSending && runtimeState.abortController) {
+            runtimeState.abortController.abort();
+            runtimeState.isSending = false;
         }
     }
 

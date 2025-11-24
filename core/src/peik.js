@@ -14,6 +14,10 @@ export default class Peik extends EventEmitter {
         
         this.chats = []; // لیستی از خلاصه چت‌ها (بدون پیام)
         this.activeChat = null;
+
+        // نگهداری وضعیت Runtime چت‌ها (غیر قابل سریال‌سازی)
+        // Key: chatId, Value: { isSending: boolean, abortController: AbortController }
+        this.chatRuntimeStates = new Map();
     }
 
     /**
@@ -41,6 +45,14 @@ export default class Peik extends EventEmitter {
                 
                 // 2. بارگذاری لیست چت‌ها
                 this.chats = await storage.getAllChats();
+                
+                // 3. مقداردهی اولیه وضعیت Runtime برای چت‌های لود شده
+                this.chats.forEach(chat => {
+                    if (!this.chatRuntimeStates.has(chat.id)) {
+                        this.chatRuntimeStates.set(chat.id, { isSending: false, abortController: null });
+                    }
+                });
+
             } catch (error) {
                 console.error('خطا در بارگذاری اولیه:', error);
                 this.emit('error', new StorageError('بارگذاری داده‌ها ناموفق بود.'));
@@ -62,6 +74,17 @@ export default class Peik extends EventEmitter {
     }
 
     /**
+     * پیدا کردن افزونه ارائه‌دهنده (Provider) بر اساس اطلاعات مدل
+     * @param {object} modelInfo 
+     * @returns {object|undefined} افزونه Provider
+     */
+    getProvider(modelInfo) {
+        const providerName = modelInfo.provider;
+        const plugins = this.pluginManager.getPluginsByCategory('provider');
+        return plugins.find(p => p.constructor.metadata.name === providerName);
+    }
+
+    /**
      * ایجاد یک چت جدید
      */
     async createChat(title = 'گپ جدید') {
@@ -77,6 +100,9 @@ export default class Peik extends EventEmitter {
         };
 
         const chat = new Chat(this, chatData);
+        
+        // ایجاد رکورد وضعیت Runtime
+        this.chatRuntimeStates.set(chat.id, { isSending: false, abortController: null });
         
         // افزودن به لیست خلاصه‌ها
         this.chats.unshift(chat.toJSON()); // فقط دیتا را نگه می‌داریم
@@ -104,6 +130,11 @@ export default class Peik extends EventEmitter {
 
         const chatData = await storage.loadChat(chatId);
         if (!chatData) throw new PeikError('چت یافت نشد.');
+
+        // اطمینان از وجود وضعیت Runtime (برای چت‌هایی که شاید دستی لود شده‌اند)
+        if (!this.chatRuntimeStates.has(chatId)) {
+            this.chatRuntimeStates.set(chatId, { isSending: false, abortController: null });
+        }
 
         const chatInstance = new Chat(this, chatData);
         this.activeChat = chatInstance;
@@ -141,6 +172,9 @@ export default class Peik extends EventEmitter {
         }
         
         this.chats = this.chats.filter(c => c.id !== chatId);
+        
+        // پاک کردن وضعیت Runtime
+        this.chatRuntimeStates.delete(chatId);
         
         if (this.activeChat && this.activeChat.id === chatId) {
             this.activeChat = null;

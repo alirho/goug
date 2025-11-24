@@ -1732,3 +1732,30 @@ localhost:3000
     - نحوه تغییر فونت‌ها
     - ساخت تم سفارشی
     - مثال تم روشن/تاریک
+
+### پرامپت ۱۴۲
+سه مشکل زیر را در کدهای هسته پیک برطرف کن:
+1. جداسازی وضعیت Runtime از Chat: در کلاس `Chat`، دو فیلد `isSending` و `abortController` وجود دارند که نباید جزو داده‌های قابل ذخیره‌سازی باشند (چون قابل سریال‌سازی نیستند).
+    - این دو فیلد را از کلاس `Chat` حذف کن
+    - در کلاس `Peik` یک `Map` به نام `chatRuntimeStates` بساز که وضعیت لحظه‌ای هر چت را نگه دارد
+    - کلید این Map باید `chatId` باشد و مقدار آن `{ isSending: false, abortController: null }`
+    - در متد `sendMessage` کلاس `Chat`، به جای استفاده مستقیم از `this.isSending`، از طریق `this.peik.chatRuntimeStates.get(this.id)` به این اطلاعات دسترسی پیدا کن
+    - هنگام ایجاد یک Chat جدید در متد `createChat` کلاس `Peik`، یک رکورد خالی در `chatRuntimeStates` برای آن چت بساز
+    - هنگام حذف چت در متد `deleteChat`، رکورد مربوطه را از `chatRuntimeStates` پاک کن
+2. جابجایی منطق پیدا کردن Provider: متد `_resolveProvider` درون کلاس `Chat` قرار دارد که باعث وابستگی مستقیم Chat به PluginManager می‌شود.
+    - متد `_resolveProvider` را از کلاس `Chat` حذف کن
+    - یک متد عمومی به نام `getProvider(modelInfo)` در کلاس `Peik` بساز که:
+      - `modelInfo.provider` را بگیرد
+      - در `this.pluginManager.getPluginsByCategory('provider')` جستجو کند
+      - افزونه‌ای که `metadata.name` آن با provider مطابقت دارد را برگرداند
+    - در متد `sendMessage` کلاس `Chat`، به جای `this._resolveProvider()`، از `this.peik.getProvider(this.modelInfo)` استفاده کن
+3. اصلاح نام‌گذاری رویدادها: رویدادهای emit شده در کلاس `Chat` استاندارد نیستند و طبق سند معماری نام‌گذاری نشده‌اند. در متد `sendMessage` کلاس `Chat`:
+    - قبل از اضافه کردن پیام کاربر به آرایه، رویداد `message:sending` را با داده `{ role: 'user', content }` emit کن
+    - بعد از اضافه کردن پیام کاربر به آرایه، رویداد `message:sent` را با شیء کامل `userMsg` emit کن
+    - خط `await this.emit('message', userMsg);` را حذف کن
+    - قبل از اضافه کردن پیام مدل به آرایه، رویداد `message:sending` را با داده `{ role: 'model' }` emit کن
+    - بعد از اضافه کردن پیام مدل (خالی) به آرایه، رویداد `message:sent` را با شیء `modelMsg` emit کن
+    - خط `await this.emit('message', modelMsg);` را حذف کن
+    - رویداد `sending` فعلی را به `response:receiving` تغییر نام بده (چون مربوط به شروع دریافت پاسخ از مدل است)
+    - همه emit ها باید async باقی بمانند (با await)
+> پرامپت بالا از مدل sonnet4.5 به عنوان مشاور فنی گرفته شده است.
