@@ -2036,3 +2036,18 @@ transaction.onabort = () => reject(new StorageError('Transaction was aborted'));
     - `confirmationModalConfirm` - click - `handleConfirm`
 
 > پرامپت‌های ۱۴۸ تا ۱۵۶ از مدل sonnet4.5 به عنوان مشاور فنی گرفته شده است.
+
+### پرامپت ۱۵۷
+در زمان اجرای برنامه خطای «خطا در نصب افزونه web-ui: can't access property "bind", this.hide is undefined» نمایش داده می‌شه.
+
+### پرامپت ۱۵۸
+در مرورگر کنسول خطای زیر نمایش داده می‌شه:
+```js
+ خطای مهلک در راه‌اندازی: PluginError: خطا در نصب افزونه web-ui: can't access property "bind", this.hide is undefined
+    PeikError http://127.0.0.1:8000/core/src/utils/errors.js:6
+    PluginError http://127.0.0.1:8000/core/src/utils/errors.js:21
+    register http://127.0.0.1:8000/core/src/pluginManager.js:37
+    use http://127.0.0.1:8000/core/src/peik.js:34
+    <anonymous> http://127.0.0.1:8000/:45
+    async* http://127.0.0.1:8000/:64
+```

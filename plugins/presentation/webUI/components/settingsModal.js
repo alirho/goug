@@ -5,20 +5,91 @@ export default class SettingsModal extends Component {
         super(peik, uiManager);
         this.confirmHandler = null;
 
-        // Bind methods
-        this.handleSave = this.handleSave.bind(this);
-        this.hide = this.hide.bind(this);
-        this.show = this.show.bind(this);
-        this.handleAddCustomProvider = this.handleAddCustomProvider.bind(this);
-        this.handleCustomListClick = this.handleCustomListClick.bind(this);
-        this.handleCustomListInput = this.handleCustomListInput.bind(this);
-        this.handleStaticInputValidation = this.handleStaticInputValidation.bind(this);
-        this.handleCustomInputValidation = this.handleCustomInputValidation.bind(this);
-        this.hideConfirmationModal = this.hideConfirmationModal.bind(this);
-        this.handleConfirm = this._handleConfirm.bind(this);
-        this.handleSettingsUpdated = this.handleSettingsUpdated.bind(this);
+        // تعریف هندلرها به صورت Arrow Function برای جلوگیری از خطای bind
+        this.hide = () => {
+            this.show(false);
+        };
+
+        this.show = (shouldShow) => {
+            if (!this.modal) return;
+            if (shouldShow === true) this.populateForm(); 
+            else if (shouldShow && typeof shouldShow === 'object') this.populateForm();
+            
+            const isVisible = typeof shouldShow === 'boolean' ? shouldShow : true;
+            this.modal.classList.toggle('hidden', !isVisible);
+        };
+
+        this.handleSave = async (e) => {
+            e.preventDefault();
+            const settings = this.getSettingsFromForm();
+            if (!settings) return;
+            
+            if (this.sessionOnlyCheckbox && this.sessionOnlyCheckbox.checked) {
+                this.peik.settings = settings;
+                this.show(false);
+                alert('تنظیمات موقت ذخیره شد.');
+            } else {
+                await this.peik.updateSettings(settings);
+            }
+        };
+
+        this.handleAddCustomProvider = (e) => {
+            if(e) e.preventDefault();
+            this.renderCustomProvider({}, true);
+        };
+
+        this.handleCustomListClick = (e) => {
+            const deleteButton = e.target.closest('.delete-custom-provider-button');
+            if (deleteButton) {
+                e.preventDefault();
+                this.handleDeleteCustomProvider(deleteButton.closest('.custom-provider-item'));
+                return;
+            }
+            const toggleButton = e.target.closest('.custom-provider-key-toggle');
+            if (toggleButton) {
+                const keyInput = toggleButton.closest('.custom-provider-item').querySelector('.custom-provider-key-input');
+                this.togglePasswordVisibility(keyInput, toggleButton);
+            }
+        };
+
+        this.handleCustomListInput = (e) => {
+            const nameInput = e.target.closest('.custom-provider-name-input');
+            if (nameInput) {
+                const title = nameInput.closest('.custom-provider-item').querySelector('.custom-provider-title');
+                if (title) title.textContent = nameInput.value || 'پیکربندی جدید';
+            }
+        };
+
+        this.handleStaticInputValidation = (e) => {
+            this.validateField(e.target, (val) => val.trim().length > 0);
+        };
+
+        this.handleCustomInputValidation = (e) => {
+            const input = e.target;
+            if (input.classList.contains('custom-provider-name-input')) {
+                this.validateCustomProviderName(input);
+            } else if (input.classList.contains('custom-provider-endpoint-input')) {
+                this.validateField(input, (val) => { try { new URL(val); return true; } catch { return false; } });
+            } else if (input.classList.contains('custom-provider-model-input')) {
+                this.validateField(input, (val) => val.trim().length > 0);
+            }
+        };
+
+        this.hideConfirmationModal = () => {
+            this.confirmationModal?.classList.add('hidden');
+            this.confirmHandler = null;
+        };
+
+        this.handleConfirm = () => {
+            if (this.confirmHandler) this.confirmHandler();
+            this.hideConfirmationModal();
+        };
+
+        this.handleSettingsUpdated = () => {
+            alert('تنظیمات ذخیره شد.');
+            this.show(false);
+        };
         
-        // Toggle handlers
         this.handleGeminiToggle = () => this.togglePasswordVisibility(this.geminiKeyInput, this.geminiKeyToggle);
         this.handleChatgptToggle = () => this.togglePasswordVisibility(this.chatgptKeyInput, this.chatgptKeyToggle);
     }
@@ -27,13 +98,7 @@ export default class SettingsModal extends Component {
         this.cacheDOMElements();
         this.bindEvents();
         
-        // گوش دادن به تغییر تنظیمات برای بستن مودال
         this.peik.on('settings:updated', this.handleSettingsUpdated);
-    }
-
-    handleSettingsUpdated() {
-        alert('تنظیمات ذخیره شد.');
-        this.show(false);
     }
 
     cacheDOMElements() {
@@ -65,7 +130,6 @@ export default class SettingsModal extends Component {
     bindEvents() {
         if (this.form) this.form.addEventListener('submit', this.handleSave);
         if (this.cancelButton) this.cancelButton.addEventListener('click', this.hide);
-        // دکمه ویرایش معمولاً در سایدبار یا هدر است، اما اگر در DOM باشد اینجا هندل می‌شود
         if (this.editButton) this.editButton.addEventListener('click', this.show);
         
         if (this.geminiKeyToggle) this.geminiKeyToggle.addEventListener('click', this.handleGeminiToggle);
@@ -86,10 +150,6 @@ export default class SettingsModal extends Component {
         if (this.confirmationModalCancel) this.confirmationModalCancel.addEventListener('click', this.hideConfirmationModal);
         if (this.confirmationModalConfirm) this.confirmationModalConfirm.addEventListener('click', this.handleConfirm);
     }
-
-    // ... [متدهای رندر و اعتبارسنجی بدون تغییر باقی می‌مانند، فقط نام هندلرها بایند شده است] ...
-    // برای خلاصه کردن پاسخ، کدهای تکراری رندرینگ را اینجا تکرار نمی‌کنم چون در فایل قبلی وجود دارند
-    // و فقط باید متدهای destroy و handleSave بروز شوند.
 
     validateField(inputElement, validatorFn) {
         const isValid = validatorFn(inputElement.value);
@@ -113,48 +173,6 @@ export default class SettingsModal extends Component {
         return true;
     }
 
-    handleStaticInputValidation(e) {
-        this.validateField(e.target, (val) => val.trim().length > 0);
-    }
-
-    handleCustomInputValidation(e) {
-        const input = e.target;
-        if (input.classList.contains('custom-provider-name-input')) {
-            this.validateCustomProviderName(input);
-        } else if (input.classList.contains('custom-provider-endpoint-input')) {
-            this.validateField(input, (val) => { try { new URL(val); return true; } catch { return false; } });
-        } else if (input.classList.contains('custom-provider-model-input')) {
-            this.validateField(input, (val) => val.trim().length > 0);
-        }
-    }
-
-    handleCustomListClick(e) {
-        const deleteButton = e.target.closest('.delete-custom-provider-button');
-        if (deleteButton) {
-            e.preventDefault();
-            this.handleDeleteCustomProvider(deleteButton.closest('.custom-provider-item'));
-            return;
-        }
-        const toggleButton = e.target.closest('.custom-provider-key-toggle');
-        if (toggleButton) {
-            const keyInput = toggleButton.closest('.custom-provider-item').querySelector('.custom-provider-key-input');
-            this.togglePasswordVisibility(keyInput, toggleButton);
-        }
-    }
-
-    handleCustomListInput(e) {
-        const nameInput = e.target.closest('.custom-provider-name-input');
-        if (nameInput) {
-            const title = nameInput.closest('.custom-provider-item').querySelector('.custom-provider-title');
-            if (title) title.textContent = nameInput.value || 'پیکربندی جدید';
-        }
-    }
-
-    handleAddCustomProvider(e) {
-        if(e) e.preventDefault();
-        this.renderCustomProvider({}, true);
-    }
-
     handleDeleteCustomProvider(itemElement) {
         if (!itemElement) return;
         const name = itemElement.querySelector('.custom-provider-title')?.textContent || 'این پیکربندی';
@@ -168,7 +186,6 @@ export default class SettingsModal extends Component {
     }
 
     renderCustomProvider(providerData = {}, open = false) {
-        // (Code same as before)
         if (!this.customProviderTemplate || !this.customProviderList) return;
         const id = providerData.id || `custom_${Date.now()}`;
         const name = providerData.name || 'پیکربندی جدید';
@@ -191,15 +208,6 @@ export default class SettingsModal extends Component {
             
             this.customProviderList.appendChild(template);
         } catch (e) { console.error(e); }
-    }
-
-    show(shouldShow) {
-        if (shouldShow === true) this.populateForm(); // Ensure explicit boolean check or just passed param
-        else if (shouldShow && typeof shouldShow === 'object') this.populateForm(); // event object fallback
-        
-        // Handle hide/show logic based on boolean or just toggle
-        const isVisible = typeof shouldShow === 'boolean' ? shouldShow : true;
-        this.modal.classList.toggle('hidden', !isVisible);
     }
 
     populateForm() {
@@ -225,22 +233,7 @@ export default class SettingsModal extends Component {
         if (activeRadio) activeRadio.checked = true;
     }
 
-    async handleSave(e) {
-        e.preventDefault();
-        const settings = this.getSettingsFromForm();
-        if (!settings) return;
-        
-        if (this.sessionOnlyCheckbox && this.sessionOnlyCheckbox.checked) {
-            this.peik.settings = settings;
-            this.show(false);
-            alert('تنظیمات موقت ذخیره شد.');
-        } else {
-            await this.peik.updateSettings(settings);
-        }
-    }
-
     getSettingsFromForm() {
-        // (Validation logic same as before)
         if (!this.form) return null;
         const newSettings = {
             activeProviderId: null,
@@ -265,7 +258,6 @@ export default class SettingsModal extends Component {
         }
         newSettings.activeProviderId = activeRadio.value;
         
-        // Simple validation for active provider
         const id = newSettings.activeProviderId;
         if ((id === 'gemini' && !newSettings.providers.gemini.apiKey) || 
             (id === 'openai' && !newSettings.providers.openai.apiKey)) {
@@ -287,11 +279,6 @@ export default class SettingsModal extends Component {
         }
     }
 
-    _handleConfirm() {
-        if (this.confirmHandler) this.confirmHandler();
-        this.hideConfirmationModal();
-    }
-
     showConfirmationModal({ title, bodyHtml, confirmText, confirmClass, onConfirm }) {
         if (!this.confirmationModal) return;
         this.confirmationModalTitle.textContent = title;
@@ -300,11 +287,6 @@ export default class SettingsModal extends Component {
         this.confirmationModalConfirm.className = `btn ${confirmClass}`;
         this.confirmHandler = onConfirm;
         this.confirmationModal.classList.remove('hidden');
-    }
-
-    hideConfirmationModal() {
-        this.confirmationModal?.classList.add('hidden');
-        this.confirmHandler = null;
     }
 
     destroy() {
