@@ -3,16 +3,14 @@ import { Plugin, Errors, Validator } from '../../../core/src/index.js';
 const { ProviderError, PluginError } = Errors;
 
 export default class GeminiProvider extends Plugin {
-    static get metadata() {
-        return {
-            name: 'gemini',
-            version: '1.0.0',
-            category: 'provider',
-            description: 'ارائه‌دهنده رسمی Google Gemini API',
-            author: 'Peik Team',
-            dependencies: [] // وابستگی ضمنی به یک افزونه شبکه دارد
-        };
-    }
+    static metadata = {
+        name: 'gemini',
+        version: '1.0.0',
+        category: 'provider',
+        description: 'ارائه‌دهنده رسمی Google Gemini API',
+        author: 'Peik Team',
+        dependencies: [] // وابستگی ضمنی به یک افزونه شبکه دارد
+    };
 
     async install(context) {
         await super.install(context);
@@ -43,11 +41,12 @@ export default class GeminiProvider extends Plugin {
     async sendMessage(config, messages, onChunk, options = {}) {
         this.validateConfig(config);
 
+        const systemText = config.systemInstruction || 'You are a helpful assistant named Peik.';
+
         const requestBody = {
             contents: this._formatMessages(messages),
-            // دستورالعمل سیستم به صورت پیش‌فرض
             systemInstruction: {
-                parts: [{ text: 'You are a helpful assistant named Peik. Your responses should be in Persian.' }]
+                parts: [{ text: systemText }]
             }
         };
 
@@ -115,7 +114,8 @@ export default class GeminiProvider extends Plugin {
                     }
                 }
             } catch (e) {
-                console.warn("خطا در تجزیه استریم Gemini:", e);
+                console.error("خطا در تجزیه استریم Gemini:", e);
+                // نادیده گرفتن خطاهای جزئی در پارس JSON یا خطوط خالی که ممکن است در استریم رخ دهند
             }
         }
     }

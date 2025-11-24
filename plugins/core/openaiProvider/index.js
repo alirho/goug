@@ -3,16 +3,14 @@ import { Plugin, Errors, Validator } from '../../../core/src/index.js';
 const { ProviderError, PluginError } = Errors;
 
 export default class OpenAIProvider extends Plugin {
-    static get metadata() {
-        return {
-            name: 'openai',
-            version: '1.0.0',
-            category: 'provider',
-            description: 'ارائه‌دهنده OpenAI (ChatGPT) و APIهای سازگار',
-            author: 'Peik Team',
-            dependencies: []
-        };
-    }
+    static metadata = {
+        name: 'openai',
+        version: '1.0.0',
+        category: 'provider',
+        description: 'ارائه‌دهنده OpenAI (ChatGPT) و APIهای سازگار',
+        author: 'Peik Team',
+        dependencies: []
+    };
 
     async install(context) {
         await super.install(context);
@@ -38,7 +36,7 @@ export default class OpenAIProvider extends Plugin {
 
         const requestBody = {
             model: config.modelName,
-            messages: this._formatMessages(messages),
+            messages: this._formatMessages(messages, config),
             stream: true
         };
 
@@ -67,7 +65,7 @@ export default class OpenAIProvider extends Plugin {
     /**
      * تبدیل فرمت پیام‌های پیک به فرمت OpenAI
      */
-    _formatMessages(history) {
+    _formatMessages(history, config) {
         const formatted = history.map(msg => {
             // نگاشت role: مدل پیک -> assistant در OpenAI
             const role = msg.role === 'model' ? 'assistant' : 'user';
@@ -95,9 +93,10 @@ export default class OpenAIProvider extends Plugin {
         });
 
         // افزودن پیام سیستم به ابتدای لیست
+        const systemText = config.systemInstruction || 'You are a helpful assistant named Peik.';
         formatted.unshift({
             role: 'system',
-            content: 'You are a helpful assistant named Peik. Your responses should be in Persian.'
+            content: systemText
         });
 
         return formatted;
@@ -117,7 +116,8 @@ export default class OpenAIProvider extends Plugin {
                 onChunk(content);
             }
         } catch (e) {
-            console.warn("خطا در تجزیه استریم OpenAI:", e);
+            console.error("خطا در تجزیه استریم OpenAI:", e);
+            // نادیده گرفتن خطاهای جزئی در پارس JSON یا خطوط ناقص که در استریم طبیعی هستند
         }
     }
 }

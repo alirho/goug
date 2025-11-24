@@ -3,16 +3,14 @@ import { Plugin, Errors, Validator } from '../../../core/src/index.js';
 const { ProviderError, PluginError } = Errors;
 
 export default class CustomProvider extends Plugin {
-    static get metadata() {
-        return {
-            name: 'custom',
-            version: '1.0.0',
-            category: 'provider',
-            description: 'ارائه‌دهنده مدل‌های سفارشی سازگار با OpenAI (مانند Ollama)',
-            author: 'Peik Team',
-            dependencies: []
-        };
-    }
+    static metadata = {
+        name: 'custom',
+        version: '1.0.0',
+        category: 'provider',
+        description: 'ارائه‌دهنده مدل‌های سفارشی سازگار با OpenAI (مانند Ollama)',
+        author: 'Peik Team',
+        dependencies: []
+    };
 
     async install(context) {
         await super.install(context);
@@ -39,7 +37,7 @@ export default class CustomProvider extends Plugin {
 
         const requestBody = {
             model: config.modelName,
-            messages: this._formatMessages(messages),
+            messages: this._formatMessages(messages, config),
             stream: true
         };
 
@@ -82,7 +80,7 @@ export default class CustomProvider extends Plugin {
         }
     }
 
-    _formatMessages(history) {
+    _formatMessages(history, config) {
         const formatted = history.map(msg => {
             const role = msg.role === 'model' ? 'assistant' : 'user';
 
@@ -107,9 +105,10 @@ export default class CustomProvider extends Plugin {
         });
 
         // دستورالعمل سیستم
+        const systemText = config.systemInstruction || 'You are a helpful assistant named Peik.';
         formatted.unshift({
             role: 'system',
-            content: 'You are a helpful assistant named Peik. Your responses should be in Persian.'
+            content: systemText
         });
 
         return formatted;
@@ -129,6 +128,7 @@ export default class CustomProvider extends Plugin {
                 onChunk(content);
             }
         } catch (e) {
+            console.error("خطا در تجزیه استریم Custom Provider:", e);
             // نادیده گرفتن خطاهای جزئی در پارس JSON
         }
     }

@@ -1833,3 +1833,16 @@ localhost:3000
 
 ### پرامپت ۱۴۷
 می‌خوام کل پروژه به را با توجه به بازسازی که در هسته اصلی انجام دادی بررسی کنی و اگر نیاز به سازگاری با هسته جدید داره اون‌ها را اصلاح کنی.
+
+### پرامپت ۱۴۸
+در افزونه‌های ارائه‌دهنده‌ها تغییرات زیر را انجام بده:
+1. حذف `get` از metadata: در هر سه فایل (`geminiProvider/index.js`, `openaiProvider/index.js`, `customProvider/index.js`):
+    - `static get metadata()` را به `static metadata = { ... }` تبدیل کن
+    - محتوای object همان باشد، فقط syntax تغییر کند
+2. قابل تنظیم کردن System Instruction: در متد `_formatMessages` هر سه فایل:
+    - به جای متن ثابت، از `config.systemInstruction` استفاده کن
+    - اگر `config.systemInstruction` وجود نداشت، از مقدار پیش‌فرض استفاده کن
+    - مقدار پیش‌فرض: `'You are a helpful assistant named Peik.'`
+3. بهبود Error Handling در Stream: در متد `_processStreamLine`:
+    - به جای `console.warn`، از `console.error` استفاده کن
+    - یک کامنت اضافه کن که توضیح بده چرا خطا را نادیده می‌گیریم (اگر دلیل خاصی دارد)
