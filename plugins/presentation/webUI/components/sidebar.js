@@ -46,8 +46,12 @@ export default class Sidebar extends Component {
     // --- Core Event Handlers ---
 
     handleChatCreated(chat) {
-        this.addChat(chat, true); // به صورت پیش‌فرض انتخاب شده در نظر نگیر، مگر اینکه سوییچ شود
-        // نکته: خود UIManager مسئول سوییچ کردن گپ است، اینجا فقط UI آپدیت می‌شود
+        // وقتی چت جدید ساخته می‌شود:
+        // ۱. به لیست اضافه شود
+        this.addChat(chat, true); // پیش‌فرض فعال نشان بده
+        
+        // ۲. به UIManager بگو سوییچ کند (اصلاح شده)
+        this.uiManager.switchChat(chat.id);
     }
 
     handleChatUpdated(chat) {
@@ -108,7 +112,6 @@ export default class Sidebar extends Component {
             const chatId = chatItem.dataset.id;
             const currentTitle = chatItem.querySelector('.chat-title').textContent;
             
-            // جایگزینی prompt بومی
             const newTitle = await dialog.prompt('نام جدید گپ را وارد کنید:', currentTitle);
             if (newTitle && newTitle.trim() !== '') {
                 this.peik.renameChat(chatId, newTitle.trim());
@@ -125,7 +128,6 @@ export default class Sidebar extends Component {
             const chatId = chatItem.dataset.id;
             const currentTitle = chatItem.querySelector('.chat-title').textContent;
 
-            // جایگزینی confirm بومی
             const confirmed = await dialog.confirm(`آیا از حذف گپ «${currentTitle}» مطمئن هستید؟`);
             if (confirmed) {
                 this.peik.deleteChat(chatId);
@@ -134,8 +136,10 @@ export default class Sidebar extends Component {
         }
     }
 
-    handleNewChatClick() {
-        this.peik.createChat('گپ جدید');
+    async handleNewChatClick() {
+        // با await منتظر می‌مانیم تا چت در هسته ساخته شود
+        // رویداد chat:created بعد از ساخته شدن emit می‌شود
+        await this.peik.createChat('گپ جدید');
     }
 
     handleSettingsClick() {
